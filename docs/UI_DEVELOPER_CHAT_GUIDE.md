@@ -383,6 +383,28 @@ import type {
   TreasuryManager,
 } from "@fabstir/sdk-core";
 
+// Mock mode for UI development - SKIPS SDK ENTIRELY
+const IS_MOCK = process.env.NEXT_PUBLIC_MOCK_MODE === "true";
+const MOCK_ADDRESS =
+  process.env.NEXT_PUBLIC_MOCK_WALLET_ADDRESS ||
+  "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb7";
+
+// Mock data for UI development
+const MOCK_HOSTS = [
+  {
+    address: "0x123...abc",
+    metadata: {
+      hardware: { gpu: "RTX 4090", vram: 24, ram: 64 },
+      capabilities: ["llama", "mistral"],
+      location: "US-East",
+      costPerToken: 2000,
+    },
+    supportedModels: ["llama-3.1-8b", "mistral-7b"],
+    isActive: true,
+    apiUrl: "ws://localhost:8080",
+  },
+];
+
 export function useFabstirSDK() {
   const { toast } = useToast();
 
@@ -415,15 +437,67 @@ export function useFabstirSDK() {
     try {
       setIsInitializing(true);
 
-      // Get chain configuration from ChainRegistry
+      // Mock mode: NO SDK, NO BLOCKCHAIN - just mock objects for UI development
+      if (IS_MOCK) {
+        console.log(
+          "🔧 MOCK MODE: Using simulated data - No SDK or blockchain"
+        );
+
+        // Set mock state immediately
+        setUserAddress(MOCK_ADDRESS);
+        setIsAuthenticated(true);
+        setSdk(null); // No SDK in mock mode
+
+        // Create mock managers that simulate SDK behavior
+        const mockSessionManager = {
+          startSession: async () => {
+            console.log("Mock: Starting session");
+            return { sessionId: BigInt(1), jobId: BigInt(1) };
+          },
+          sendPromptStreaming: async (sessionId: bigint, prompt: string) => {
+            console.log("Mock: Sending prompt", prompt);
+            await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate delay
+            return `Mock AI response to: "${prompt}". In production, this would be a real LLM response.`;
+          },
+          endSession: async () => {
+            console.log("Mock: Ending session");
+          },
+        } as any;
+
+        const mockHostManager = {
+          discoverAllActiveHostsWithModels: async () => {
+            console.log("Mock: Discovering hosts");
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            return MOCK_HOSTS;
+          },
+          getHostStatus: async () => ({ isActive: true }),
+        } as any;
+
+        const mockPaymentManager = {
+          getBalance: async () => BigInt(10000000), // 10 USDC
+        } as any;
+
+        setSessionManager(mockSessionManager);
+        setHostManager(mockHostManager);
+        setPaymentManager(mockPaymentManager);
+
+        toast({
+          title: "Mock Mode Active",
+          description: "UI development mode - no blockchain connection",
+        });
+
+        setIsInitializing(false);
+        return; // EXIT EARLY - no SDK initialization
+      }
+
+      // PRODUCTION MODE: Real SDK initialization
+      // This only runs when NEXT_PUBLIC_MOCK_MODE is false or not set
       const chain = ChainRegistry.getChain(ChainId.BASE_SEPOLIA);
 
       const sdkConfig = {
         mode: "production" as const,
         chainId: ChainId.BASE_SEPOLIA,
         rpcUrl: process.env.NEXT_PUBLIC_RPC_URL_BASE_SEPOLIA!,
-
-        // Contract addresses from ChainRegistry
         contractAddresses: {
           jobMarketplace: chain.contracts.jobMarketplace,
           nodeRegistry: chain.contracts.nodeRegistry,
@@ -433,8 +507,6 @@ export function useFabstirSDK() {
           usdcToken: chain.contracts.usdcToken,
           modelRegistry: chain.contracts.modelRegistry,
         },
-
-        // S5 storage for conversation persistence
         s5Config: {
           portalUrl: process.env.NEXT_PUBLIC_S5_PORTAL_URL,
         },
@@ -444,7 +516,6 @@ export function useFabstirSDK() {
       setSdk(newSdk);
 
       console.log("✅ SDK initialized successfully");
-
       toast({
         title: "SDK Ready",
         description: "Fabstir SDK initialized successfully",
@@ -463,6 +534,21 @@ export function useFabstirSDK() {
 
   const authenticate = useCallback(
     async (method: "metamask" | "base-account" = "metamask") => {
+      // Mock mode: Fake authentication - no wallet needed
+      if (IS_MOCK) {
+        setIsAuthenticated(true);
+        setUserAddress(MOCK_ADDRESS);
+        toast({
+          title: "Mock Connected",
+          description: `Mock wallet: ${MOCK_ADDRESS.slice(
+            0,
+            6
+          )}...${MOCK_ADDRESS.slice(-4)}`,
+        });
+        return;
+      }
+
+      // PRODUCTION MODE: Real wallet connection
       if (!sdk) {
         toast({
           title: "SDK Not Ready",
@@ -474,7 +560,6 @@ export function useFabstirSDK() {
 
       try {
         if (method === "metamask") {
-          // Check if MetaMask is installed
           if (!window.ethereum) {
             toast({
               title: "MetaMask Not Found",
@@ -484,15 +569,11 @@ export function useFabstirSDK() {
             return;
           }
 
-          // Authenticate with MetaMask
           await sdk.authenticate("metamask");
         } else if (method === "base-account") {
-          // Base Account Kit authentication
-          // This is handled separately - see section 2.3
           throw new Error("Use connectWithBaseAccount() for Base Account Kit");
         }
 
-        // Get user address
         const signer = sdk.getSigner();
         if (!signer) {
           throw new Error("Signer not available after authentication");
@@ -500,18 +581,12 @@ export function useFabstirSDK() {
         const address = await signer.getAddress();
         setUserAddress(address);
 
-        // Get all managers
-        const pm = sdk.getPaymentManager();
-        const sm = sdk.getSessionManager();
-        const hm = sdk.getHostManager();
-        const stm = sdk.getStorageManager();
-        const tm = sdk.getTreasuryManager();
-
-        setPaymentManager(pm);
-        setSessionManager(sm);
-        setHostManager(hm);
-        setStorageManager(stm);
-        setTreasuryManager(tm);
+        // Get real managers from SDK
+        setPaymentManager(sdk.getPaymentManager());
+        setSessionManager(sdk.getSessionManager());
+        setHostManager(sdk.getHostManager());
+        setStorageManager(sdk.getStorageManager());
+        setTreasuryManager(sdk.getTreasuryManager());
         setIsAuthenticated(true);
 
         toast({
@@ -544,8 +619,29 @@ export function useFabstirSDK() {
     userAddress,
     isInitializing,
     authenticate,
+    isMockMode: IS_MOCK,
   };
 }
+```
+
+````
+
+**Development Modes**:
+
+- **MOCK MODE** (`NEXT_PUBLIC_MOCK_MODE=true`):
+
+  - NO SDK initialization
+  - NO blockchain connection
+  - NO RPC calls
+  - Pure UI development with simulated data
+  - Perfect for Claude Code to build and test UI components
+
+- **PRODUCTION MODE** (`NEXT_PUBLIC_MOCK_MODE=false` or not set):
+  - Real SDK initialization
+  - Real blockchain connection
+  - Real wallet required
+  - For manual testing with funded accounts
+
 ```
 
 ### 2.2 Wallet Connection with RainbowKit
@@ -1977,3 +2073,4 @@ getHostStatus(hostAddress: string): Promise<HostStatus>
 ---
 
 **You're building a production-quality chat interface with the best modern React tools. The SDK handles all blockchain complexity - you focus on creating an amazing UX!** 🚀
+````
