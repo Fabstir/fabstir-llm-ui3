@@ -51,22 +51,18 @@ cd fabstir-chat
 
 ### 1.3 Install ALL Dependencies
 
-#### Core SDK & Enhanced S5.js
+#### Core SDK (with bundled Enhanced S5.js)
 
 ```bash
 # IMPORTANT: These packages are already available in the Docker environment
 
 # Fabstir SDK - Install from the pre-built tarball
 # The SDK is mounted at ../fabstir-llm-sdk in the container
-npm install ../fabstir-llm-sdk/packages/sdk-core/fabstir-sdk-core-1.1.0.tgz
+# Version 1.1.2+ includes enhanced S5.js bundled internally
+npm install ../fabstir-llm-sdk/packages/sdk-core/fabstir-sdk-core-1.1.2.tgz
 
-# Enhanced S5.js - Install from the tarball in project root
-# The enhanced-s5js-0.2.0.tgz file is already in the project directory
-npm install ./enhanced-s5js-0.2.0.tgz
-
-# Verify installations worked:
+# Verify installation worked:
 npm list @fabstir/sdk-core
-npm list @s5-dev/s5js
 
 # Note: If you need to rebuild the SDK:
 # cd ../fabstir-llm-sdk/packages/sdk-core
@@ -87,8 +83,7 @@ npm install @rainbow-me/rainbowkit wagmi @tanstack/react-query  # Multi-wallet s
 // If npm install fails, manually add to package.json dependencies:
 {
   "dependencies": {
-    "@fabstir/sdk-core": "file:../fabstir-llm-sdk/packages/sdk-core/fabstir-sdk-core-1.1.0.tgz",
-    "@s5-dev/s5js": "file:enhanced-s5js-0.2.0.tgz",
+    "@fabstir/sdk-core": "file:../fabstir-llm-sdk/packages/sdk-core/fabstir-sdk-core-1.1.2.tgz",
     "ethers": "^6.13.4",
     "viem": "^2.0.0",
     "@base-org/account": "^2.3.1",
@@ -98,6 +93,9 @@ npm install @rainbow-me/rainbowkit wagmi @tanstack/react-query  # Multi-wallet s
   }
 }
 // Then run: npm install
+
+// IMPORTANT: Do NOT add @fabstir/sdk-core to transpilePackages in next.config.js
+// The SDK is pre-transpiled and adding it will cause webpack parse errors
 ```
 
 #### UI Components & Libraries
