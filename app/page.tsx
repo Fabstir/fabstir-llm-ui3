@@ -1,10 +1,13 @@
 "use client";
 
 import { WalletConnectButton } from "@/components/wallet-connect-button";
+import { HostSelector } from "@/components/host-selector";
 import { useFabstirSDK } from "@/hooks/use-fabstir-sdk";
+import { useHosts } from "@/hooks/use-hosts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, RefreshCw } from "lucide-react";
 
 export default function Home() {
   const {
@@ -16,6 +19,14 @@ export default function Home() {
     paymentManager,
     hostManager,
   } = useFabstirSDK();
+
+  const {
+    availableHosts,
+    selectedHost,
+    setSelectedHost,
+    isDiscoveringHosts,
+    discoverHosts,
+  } = useHosts(hostManager);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-8 md:p-24">
@@ -96,21 +107,61 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* Next Steps */}
+        {/* Host Discovery */}
         {isAuthenticated && (
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Select AI Host</CardTitle>
+                  <CardDescription>
+                    Discover available hosts on the Fabstir network
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={discoverHosts}
+                  disabled={isDiscoveringHosts}
+                  size="sm"
+                >
+                  {isDiscoveringHosts ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Discovering...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Discover Hosts
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <HostSelector
+                hosts={availableHosts}
+                selectedHost={selectedHost}
+                onSelect={setSelectedHost}
+                isLoading={isDiscoveringHosts}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Next Steps */}
+        {isAuthenticated && selectedHost && (
           <Card>
             <CardHeader>
               <CardTitle>Ready to Chat!</CardTitle>
               <CardDescription>
-                Your wallet is connected and the SDK is initialized
+                Host selected: {selectedHost.address.slice(0, 10)}...{selectedHost.address.slice(-8)}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Phase 2 complete! Next phases will add:
+                Phase 3 complete! Next phases will add:
               </p>
               <ul className="list-disc list-inside text-sm text-muted-foreground mt-2 space-y-1">
-                <li>Host discovery and selection (Phase 3)</li>
                 <li>Chat interface with streaming responses (Phase 4)</li>
                 <li>Session management with payments (Phase 5)</li>
                 <li>Cost tracking and analytics (Phase 6)</li>
