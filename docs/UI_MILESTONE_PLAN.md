@@ -212,12 +212,12 @@ Implement session lifecycle management with payment handling.
 
 ### Milestones
 
-- [ ] Session creation with USDC deposit
-- [ ] Active session state management
-- [ ] Message sending through SDK
-- [ ] Context preservation across messages
-- [ ] Session ending with settlement
-- [ ] Balance tracking
+- [x] Session creation with USDC deposit
+- [x] Active session state management
+- [x] Message sending through SDK
+- [x] Context preservation across messages
+- [x] Session ending with settlement
+- [x] Balance tracking
 
 ### Implementation Files
 

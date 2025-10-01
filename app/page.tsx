@@ -3,9 +3,11 @@
 import { WalletConnectButton } from "@/components/wallet-connect-button";
 import { HostSelector } from "@/components/host-selector";
 import { ChatInterface } from "@/components/chat-interface";
+import { SessionControls } from "@/components/session-controls";
+import { SessionStatus } from "@/components/session-status";
 import { useFabstirSDK } from "@/hooks/use-fabstir-sdk";
 import { useHosts } from "@/hooks/use-hosts";
-import { useChat } from "@/hooks/use-chat";
+import { useChatSession } from "@/hooks/use-chat-session";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,7 +32,19 @@ export default function Home() {
     discoverHosts,
   } = useHosts(hostManager);
 
-  const { messages, isSending, sendMessage } = useChat();
+  const {
+    messages,
+    sessionId,
+    totalTokens,
+    totalCost,
+    isSessionActive,
+    startSession,
+    isStartingSession,
+    sendMessage,
+    isSendingMessage,
+    endSession,
+    isEndingSession,
+  } = useChatSession(sessionManager, selectedHost);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-8 md:p-24">
@@ -152,29 +166,46 @@ export default function Home() {
           </Card>
         )}
 
-        {/* Chat Interface */}
+        {/* Session Management & Chat */}
         {isAuthenticated && selectedHost && (
           <div className="space-y-4">
+            {/* Session Status */}
+            <SessionStatus
+              sessionId={sessionId}
+              totalTokens={totalTokens}
+              totalCost={totalCost}
+              hostAddress={selectedHost.address}
+              model={selectedHost.models[0]}
+            />
+
+            {/* Session Controls */}
             <Card>
               <CardHeader>
-                <CardTitle>Chat</CardTitle>
+                <CardTitle>Session</CardTitle>
                 <CardDescription>
-                  Host: {selectedHost.address.slice(0, 10)}...{selectedHost.address.slice(-8)} •
-                  Model: {selectedHost.models[0]}
+                  {isSessionActive
+                    ? "Session active - you can chat with the AI"
+                    : "Start a session to begin chatting"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Badge variant="outline" className="mb-4">
-                  Phase 4: Chat UI (Session management in Phase 5)
-                </Badge>
+                <SessionControls
+                  isSessionActive={isSessionActive}
+                  onStartSession={startSession}
+                  onEndSession={endSession}
+                  isStarting={isStartingSession}
+                  isEnding={isEndingSession}
+                  disabled={!selectedHost}
+                />
               </CardContent>
             </Card>
 
+            {/* Chat Interface */}
             <ChatInterface
               messages={messages}
               onSendMessage={sendMessage}
-              isSending={isSending}
-              isSessionActive={true} // For Phase 4 demo; will be real session state in Phase 5
+              isSending={isSendingMessage}
+              isSessionActive={isSessionActive}
             />
           </div>
         )}
