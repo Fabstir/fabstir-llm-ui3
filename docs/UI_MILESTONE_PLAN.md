@@ -6,7 +6,7 @@ This document provides a structured, milestone-based approach for building the F
 
 **Core Principle**: Build functional, visually complete components at each step. No test files needed - verify everything works in the browser.
 
-**Reference**: Follow `docs/UI_DEVELOPER_CHAT_GUIDE.md` for detailed implementation patterns and `examples/chat-context-popupfree-demo.tsx` for complex integrations.
+**Reference**: Follow `docs/UI_DEVELOPER_CHAT_GUIDE.md` for detailed implementation patterns and `examples/chat-context-popupfree-sdk-demo.tsx` for complex integrations.
 
 ---
 
@@ -354,7 +354,7 @@ fabstir-llm-ui3/
 
 ### Overview
 
-Implement popup-free transactions using Base Account Kit following `chat-context-popupfree-demo.tsx`.
+Implement popup-free transactions using Base Account Kit following `chat-context-popupfree-sdk-demo.tsx`.
 
 ### Milestones
 
@@ -566,7 +566,7 @@ Instructions for Claude Code:
 5. Continue through each phase sequentially
 6. After each component, verify it works visually in the browser
 7. Don't skip any features - implement everything in the guide
-8. Use chat-context-popupfree-demo.tsx as reference for complex parts
+8. Use chat-context-popupfree-sdk-demo.tsx as reference for complex parts
 9. Ask for clarification if any part of the guide is unclear
 10. Celebrate milestones - this is a substantial application!
 ```
@@ -576,7 +576,7 @@ Instructions for Claude Code:
 ## Resources
 
 - **Primary Guide**: `docs/UI_DEVELOPER_CHAT_GUIDE.md`
-- **Reference Implementation**: `examples/chat-context-popupfree-demo.tsx`
+- **Reference Implementation**: `examples/chat-context-popupfree-sdk-demo.tsx`
 - **ETH Flow Example**: `examples/eth-mvp-flow-sdk.test.tsx`
 - **SDK Quick Reference Documentation**: `docs/SDK_QUICK_REFERENCE.md`
 - **SDK Documentation**: `docs/SDK_API.md`

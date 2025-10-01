@@ -6,7 +6,7 @@ This guide shows you how to build a **production-quality**, professional chat in
 
 **Key Principle**: The SDK handles ALL blockchain and LLM complexity. You focus on building a beautiful, responsive UI using industry-standard components.
 
-**Reference Implementation**: See `/workspace/apps/harness/pages/chat-context-demo.tsx` for a complete working example (1833 lines of production code).
+**Reference Implementation**: See `/workspace/examples/chat-context-popupfree-sdk-demo.tsx` for a complete working example (1833 lines of production code).
 
 ---
 
@@ -2065,7 +2065,7 @@ getHostStatus(hostAddress: string): Promise<HostStatus>
 
 - SDK QUICK REFERENCE: `/workspace/docs/SDK_QUICK_REFERENCE.md`
 - SDK API: `/workspace/docs/SDK_API.md`
-- Reference Implementation: `/workspace/apps/harness/pages/chat-context-demo.tsx`
+- Reference Implementation: `/workspace/examples/chat-context-popupfree-sdk-demo.tsx`
 - shadcn/ui: https://ui.shadcn.com
 - RainbowKit: https://rainbowkit.com
 - Base Account Kit: https://docs.base.org/account-kit
