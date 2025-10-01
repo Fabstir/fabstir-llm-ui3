@@ -1,0 +1,21 @@
+{
+  "name": "Fabstir LLM Marketplace",
+  "short_name": "Fabstir",
+  "description": "Democratizing AI, One Inference at a Time",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#540074",
+  "background_color": "#540074",
+  "display": "standalone",
+  "start_url": "/"
+}

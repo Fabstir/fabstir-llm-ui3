@@ -1,0 +1,41 @@
+{
+  "primaryColor": {
+    "primaryColor": "#540074",
+    "primaryContentColor": "#ea97ff",
+    "primaryLightColor": "#9d50bc",
+    "primaryDarkColor": "#260048"
+  },
+  "secondaryColor": {
+    "secondaryColor": "#e458b9",
+    "secondaryContentColor": "#fff4ff",
+    "secondaryLightColor": "#ffa5ff",
+    "secondaryDarkColor": "#af1e89"
+  },
+  "utilityColors": {
+    "successColor": "#48a437",
+    "warningColor": "#a6a23a",
+    "errorColor": "#a93a2a",
+    "successContentColor": "#002300",
+    "warningContentColor": "#272000",
+    "errorContentColor": "#330000"
+  },
+  "neutralsColor": {
+    "light": {
+      "foreground": "#ababae",
+      "background": "#a653f6",
+      "border": "#d1d1d4",
+      "copy": "#4e4e51",
+      "copyLight": "#6a6a6d",
+      "copyLighter": "#86868a"
+    },
+    "dark": {
+      "foreground": "#e6e6e9",
+      "background": "#1a1a1d",
+      "border": "#3e3e40",
+      "copy": "#ababae",
+      "copyLight": "#c5c5c8",
+      "copyLighter": "#e1e1e4"
+    }
+  },
+  "saturationNumber": 1
+}

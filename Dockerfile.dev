@@ -1,0 +1,122 @@
+# Developer Dockerfile for Fabstir LLM UI Monorepo
+FROM ubuntu:22.04
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    # Basic tools
+    curl \
+    wget \
+    git \
+    vim \
+    nano \
+    sudo \
+    build-essential \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    software-properties-common \
+    # Development tools
+    python3 \
+    python3-pip \
+    unzip \
+    zip \
+    htop \
+    tree \
+    jq \
+    # Network tools
+    net-tools \
+    iputils-ping \
+    # Shell and terminal
+    zsh \
+    tmux \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 20 (required for Tailwind v4 upgrade tool)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g npm@latest
+
+# Install pnpm (recommended package manager for monorepo)
+RUN npm install -g pnpm@latest
+
+# Install global development tools
+RUN npm install -g \
+    turbo \
+    @turbo/gen \
+    typescript \
+    tsx \
+    npm-check-updates \
+    vercel \
+    serve
+
+# Create developer user with sudo privileges
+RUN useradd -m -s /bin/bash developer \
+    && echo "developer:developer" | chpasswd \
+    && usermod -aG sudo developer \
+    && echo "developer ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Switch to developer user
+USER developer
+WORKDIR /home/developer
+
+# Install Oh My Zsh for better terminal experience
+RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended \
+    && echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc \
+    && echo 'export EDITOR=vim' >> ~/.zshrc
+
+# Create project directory structure
+RUN mkdir -p ~/dev/Fabstir/fabstir-llm-marketplace/fabstir-llm-ui3
+
+# Set working directory
+WORKDIR /home/developer/dev/Fabstir/fabstir-llm-marketplace/fabstir-llm-ui3
+
+# Create initial monorepo structure
+RUN mkdir -p apps packages .vscode
+
+# Add helpful aliases
+RUN echo 'alias ll="ls -la"' >> ~/.bashrc \
+    && echo 'alias ll="ls -la"' >> ~/.zshrc \
+    && echo 'alias dev="pnpm dev"' >> ~/.bashrc \
+    && echo 'alias dev="pnpm dev"' >> ~/.zshrc \
+    && echo 'alias build="pnpm build"' >> ~/.bashrc \
+    && echo 'alias build="pnpm build"' >> ~/.zshrc
+
+# Set up git config (you can customize these)
+RUN git config --global user.name "Developer" \
+    && git config --global user.email "developer@fabstir.com" \
+    && git config --global init.defaultBranch main
+
+# Create a welcome message
+RUN echo '#!/bin/bash' > /home/developer/welcome.sh \
+    && echo 'echo "=========================================="' >> /home/developer/welcome.sh \
+    && echo 'echo "  Fabstir LLM UI Development Environment"' >> /home/developer/welcome.sh \
+    && echo 'echo "=========================================="' >> /home/developer/welcome.sh \
+    && echo 'echo ""' >> /home/developer/welcome.sh \
+    && echo 'echo "Node.js version: $(node --version)"' >> /home/developer/welcome.sh \
+    && echo 'echo "npm version: $(npm --version)"' >> /home/developer/welcome.sh \
+    && echo 'echo "pnpm version: $(pnpm --version)"' >> /home/developer/welcome.sh \
+    && echo 'echo ""' >> /home/developer/welcome.sh \
+    && echo 'echo "Project directory: ~/dev/Fabstir/fabstir-llm-marketplace/fabstir-llm-ui3"' >> /home/developer/welcome.sh \
+    && echo 'echo ""' >> /home/developer/welcome.sh \
+    && echo 'echo "To install Claude Code:"' >> /home/developer/welcome.sh \
+    && echo 'echo "  curl -fsSL https://github.com/cline/cline/releases/latest/download/install.sh | bash"' >> /home/developer/welcome.sh \
+    && echo 'echo ""' >> /home/developer/welcome.sh \
+    && echo 'echo "To start Claude Code in YOLO mode:"' >> /home/developer/welcome.sh \
+    && echo 'echo "  claude-code --yolo"' >> /home/developer/welcome.sh \
+    && echo 'echo ""' >> /home/developer/welcome.sh \
+    && echo 'echo "=========================================="' >> /home/developer/welcome.sh \
+    && chmod +x /home/developer/welcome.sh
+
+# Add welcome to shell startup
+RUN echo '/home/developer/welcome.sh' >> ~/.bashrc \
+    && echo '/home/developer/welcome.sh' >> ~/.zshrc
+
+# Expose common development ports
+EXPOSE 3000 3001 3002 3003 4000 5000 5173 6006 8080 9000
+
+# Use bash as default command (you can change to zsh if preferred)
+CMD ["/bin/bash"]
