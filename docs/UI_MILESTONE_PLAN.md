@@ -162,13 +162,13 @@ Build the main chat UI with message display, input, and animations following Sec
 
 ### Milestones
 
-- [ ] Message display with role-based styling
-- [ ] Smooth Framer Motion animations
-- [ ] Message input with keyboard shortcuts
-- [ ] Auto-scroll to latest message
-- [ ] Loading indicators for AI responses
-- [ ] Token count badges
-- [ ] Responsive design (mobile + desktop)
+- [x] Message display with role-based styling
+- [x] Smooth Framer Motion animations
+- [x] Message input with keyboard shortcuts
+- [x] Auto-scroll to latest message
+- [x] Loading indicators for AI responses
+- [x] Token count badges
+- [x] Responsive design (mobile + desktop)
 
 ### Implementation Files
 
