@@ -259,12 +259,12 @@ Build the cost dashboard with charts and usage tracking.
 
 ### Milestones
 
-- [ ] Real-time token counting
-- [ ] Cost calculation display
-- [ ] Usage charts with Recharts
-- [ ] Balance displays (USDC, ETH)
-- [ ] Earnings tracking for hosts
-- [ ] Session history view
+- [x] Real-time token counting
+- [x] Cost calculation display
+- [x] Usage charts with Recharts
+- [x] Balance displays (USDC, ETH)
+- [x] Earnings tracking for hosts
+- [x] Session history view
 
 ### Implementation Files
 

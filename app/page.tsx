@@ -5,9 +5,11 @@ import { HostSelector } from "@/components/host-selector";
 import { ChatInterface } from "@/components/chat-interface";
 import { SessionControls } from "@/components/session-controls";
 import { SessionStatus } from "@/components/session-status";
+import { CostDashboard } from "@/components/cost-dashboard";
 import { useFabstirSDK } from "@/hooks/use-fabstir-sdk";
 import { useHosts } from "@/hooks/use-hosts";
 import { useChatSession } from "@/hooks/use-chat-session";
+import { useBalances } from "@/hooks/use-balances";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,6 +47,11 @@ export default function Home() {
     endSession,
     isEndingSession,
   } = useChatSession(sessionManager, selectedHost);
+
+  const { usdcBalance, ethBalance, isLoading: isLoadingBalances } = useBalances(
+    paymentManager,
+    userAddress
+  );
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-8 md:p-24">
@@ -199,6 +206,17 @@ export default function Home() {
                 />
               </CardContent>
             </Card>
+
+            {/* Cost Dashboard */}
+            {isSessionActive && (
+              <CostDashboard
+                usdcBalance={usdcBalance}
+                ethBalance={ethBalance}
+                totalCost={totalCost}
+                totalTokens={totalTokens}
+                messages={messages}
+              />
+            )}
 
             {/* Chat Interface */}
             <ChatInterface
