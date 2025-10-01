@@ -578,6 +578,7 @@ Instructions for Claude Code:
 - **Primary Guide**: `docs/UI_DEVELOPER_CHAT_GUIDE.md`
 - **Reference Implementation**: `examples/chat-context-popupfree-demo.tsx`
 - **ETH Flow Example**: `examples/eth-mvp-flow-sdk.test.tsx`
+- **SDK Quick Reference Documentation**: `docs/SDK_QUICK_REFERENCE.md`
 - **SDK Documentation**: `docs/SDK_API.md`
 - **Brand Assets**: `public/` folder and `docs/fabstir_color_profile_1.json`
 
