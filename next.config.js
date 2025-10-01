@@ -2,7 +2,6 @@
 const nextConfig = {
   // Required for SDK browser compatibility
   transpilePackages: [
-    "@fabstir/sdk-core",
     "@rainbow-me/rainbowkit",
     "@assistant-ui/react",
   ],
@@ -16,8 +15,12 @@ const nextConfig = {
       crypto: false,
     };
 
-    // Suppress punycode deprecation warning
-    config.ignoreWarnings = [{ module: /node_modules\/punycode/ }];
+    // Suppress punycode deprecation warning and MetaMask SDK warnings
+    config.ignoreWarnings = [
+      { module: /node_modules\/punycode/ },
+      { module: /node_modules\/@metamask\/sdk/ },
+      { module: /node_modules\/@react-native-async-storage/ },
+    ];
 
     // Add externals for node-only packages
     config.externals.push("pino-pretty", "encoding");
