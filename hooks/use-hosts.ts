@@ -83,11 +83,13 @@ export function useHosts(hostManager: HostManager | null) {
     staleTime: 30000, // Cache for 30 seconds
   });
 
-  // Auto-select first host when hosts are discovered
+  // Auto-select random host when hosts are discovered
   const handleDiscoverHosts = async () => {
     const result = await refetchHosts();
     if (result.data && result.data.length > 0 && !selectedHost) {
-      setSelectedHost(result.data[0]);
+      const randomIndex = Math.floor(Math.random() * result.data.length);
+      setSelectedHost(result.data[randomIndex]);
+      console.log(`🎲 Randomly selected host ${randomIndex + 1} of ${result.data.length}: ${result.data[randomIndex].address}`);
     }
   };
 
