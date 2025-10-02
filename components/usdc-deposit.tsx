@@ -253,6 +253,22 @@ export function USDCDeposit({ primaryAccount, subAccount, usdcAddress, onDeposit
 
           {/* Base Account Balances */}
           <div className="grid grid-cols-2 gap-3">
+            {/* Primary Account */}
+            <div className="p-3 bg-primary/10 rounded-lg border-2 border-primary/30">
+              <div className="text-xs text-primary mb-1 font-semibold">
+                PRIMARY Account (Bank)
+              </div>
+              <div className="font-mono text-lg">
+                {primaryBalance !== null ? `${primaryBalance} USDC` : "Loading..."}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {primaryAccount.slice(0, 6)}...{primaryAccount.slice(-4)}
+              </div>
+              <div className="text-xs text-green-600 mt-1 font-semibold">
+                💰 Deposit here ←
+              </div>
+            </div>
+
             {/* Sub Account */}
             {subAccount && (
               <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
@@ -270,22 +286,6 @@ export function USDCDeposit({ primaryAccount, subAccount, usdcAddress, onDeposit
                 </div>
               </div>
             )}
-
-            {/* Primary Account */}
-            <div className="p-3 bg-primary/10 rounded-lg border-2 border-primary/30">
-              <div className="text-xs text-primary mb-1 font-semibold">
-                PRIMARY Account (Bank)
-              </div>
-              <div className="font-mono text-lg">
-                {primaryBalance !== null ? `${primaryBalance} USDC` : "Loading..."}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {primaryAccount.slice(0, 6)}...{primaryAccount.slice(-4)}
-              </div>
-              <div className="text-xs text-green-600 mt-1 font-semibold">
-                💰 Deposit here ←
-              </div>
-            </div>
           </div>
 
           {/* Total Balance */}

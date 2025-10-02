@@ -333,7 +333,7 @@ export default function ChatPage() {
                     </Badge>
                   )}
                   <span className="text-sm font-mono">
-                    {(accountInfo?.subAccount || userAddress).slice(0, 6)}...{(accountInfo?.subAccount || userAddress).slice(-4)}
+                    {(accountInfo?.primaryAccount || userAddress).slice(0, 6)}...{(accountInfo?.primaryAccount || userAddress).slice(-4)}
                   </span>
                 </div>
 
