@@ -28,7 +28,9 @@ interface SessionConfig {
 
 export function useChatSession(
   sessionManager: SessionManager | null,
-  selectedHost: ParsedHost | null
+  selectedHost: ParsedHost | null,
+  paymentManager?: any,
+  userAddress?: string
 ) {
   const { toast } = useToast();
 
@@ -36,6 +38,7 @@ export function useChatSession(
   const [sessionId, setSessionId] = useState<bigint | null>(null);
   const [totalTokens, setTotalTokens] = useState(0);
   const [totalCost, setTotalCost] = useState(0);
+  const [isApprovalDone, setIsApprovalDone] = useState(false);
 
   // Mutation: Start session
   const startSessionMutation = useMutation({
@@ -51,14 +54,54 @@ export function useChatSession(
 
       // Production mode: Use real SDK
       if (!sessionManager) throw new Error("Session manager not initialized");
+      if (!paymentManager) throw new Error("Payment manager not initialized");
 
-      const config: SessionConfig = {
+      // Get USDC token address from ChainRegistry
+      const { ChainRegistry, ChainId } = await import("@fabstir/sdk-core");
+      const { parseUnits } = await import("viem");
+      const chain = ChainRegistry.getChain(ChainId.BASE_SEPOLIA);
+
+      // Step 1: Check and approve USDC to JobMarketplace (one-time, popup-free with Base Account)
+      if (userAddress && !isApprovalDone) {
+        console.log("🔍 Checking USDC approval for JobMarketplace...");
+
+        const currentAllowance = await paymentManager.checkAllowance(
+          userAddress,
+          chain.contracts.jobMarketplace,
+          chain.contracts.usdcToken
+        );
+        const requiredAmount = parseUnits(SESSION_DEPOSIT, 6);
+
+        if (currentAllowance < requiredAmount) {
+          console.log("📝 Approving JobMarketplace (popup-free with Base Account)...");
+          const approvalAmount = parseUnits("1000000", 6); // Approve 1M USDC (one-time)
+
+          await paymentManager.approveToken(
+            chain.contracts.jobMarketplace,
+            approvalAmount,
+            chain.contracts.usdcToken
+          );
+
+          console.log("✅ USDC approval complete!");
+          setIsApprovalDone(true);
+        } else {
+          console.log("✅ USDC approval already exists");
+          setIsApprovalDone(true);
+        }
+      }
+
+      // Step 2: Start session
+      const config: any = {
         depositAmount: SESSION_DEPOSIT,
         pricePerToken: PRICE_PER_TOKEN,
         duration: SESSION_DURATION,
         proofInterval: PROOF_INTERVAL,
-        hostUrl: selectedHost.endpoint,
         model: selectedHost.models[0],
+        provider: selectedHost.address,
+        hostAddress: selectedHost.address,
+        endpoint: selectedHost.endpoint,
+        paymentToken: chain.contracts.usdcToken,
+        useDeposit: false, // Use direct payment with Auto Spend Permissions
         chainId: 84532, // Base Sepolia
       };
 

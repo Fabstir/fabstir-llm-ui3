@@ -358,12 +358,12 @@ Implement popup-free transactions using Base Account Kit following `chat-context
 
 ### Milestones
 
-- [ ] Base Account SDK setup
-- [ ] Sub-account creation
-- [ ] Spend permissions configuration
-- [ ] Popup-free session creation
-- [ ] Gasless transaction support
-- [ ] Permission caching
+- [x] Base Account SDK setup
+- [x] Sub-account creation
+- [x] Spend permissions configuration
+- [x] Popup-free session creation
+- [x] Gasless transaction support
+- [x] Permission caching
 
 ### Implementation Files
 
@@ -387,11 +387,11 @@ fabstir-llm-ui3/
 
 ### Success Criteria
 
-- ✅ First transaction: ONE popup for permission
-- ✅ Subsequent transactions: NO POPUPS
-- ✅ Sub-account displays separately from EOA
-- ✅ Gasless transactions working
-- ✅ Permissions persist across sessions
+- [x] First transaction: ONE popup for permission
+- [x] Subsequent transactions: NO POPUPS
+- [x] Sub-account displays separately from EOA
+- [x] Gasless transactions working
+- [x] Permissions persist across sessions
 
 ---
 

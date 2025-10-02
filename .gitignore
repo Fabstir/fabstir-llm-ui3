@@ -67,7 +67,7 @@ Thumbs.db
 
 # Optional: Screenshots (you might want to commit some for documentation)
 # Uncomment if you want to ignore all screenshots
-# /screenshots/
+/screenshots/
 
 # Or be selective - ignore working screenshots but keep milestone ones
 /screenshots/temp/

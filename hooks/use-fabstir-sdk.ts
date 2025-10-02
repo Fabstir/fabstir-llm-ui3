@@ -203,12 +203,14 @@ export function useFabstirSDK() {
       };
 
       const newSdk = new FabstirSDKCore(sdkConfig);
-      await newSdk.authenticate(walletClient);
 
-      const signer = newSdk.getSigner();
-      if (!signer) {
-        throw new Error("Signer not available after authentication");
-      }
+      // Create ethers signer from wagmi walletClient
+      const { BrowserProvider } = await import("ethers");
+      const provider = new BrowserProvider(walletClient as any);
+      const signer = await provider.getSigner();
+
+      // Authenticate with signer (not just address)
+      await newSdk.authenticate("signer", { signer });
 
       const signerAddress = await signer.getAddress();
       setUserAddress(signerAddress);

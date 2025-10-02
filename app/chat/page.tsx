@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
 import { HostSelector } from "@/components/host-selector";
 import { ChatInterface } from "@/components/chat-interface";
@@ -12,13 +13,15 @@ import { useFabstirSDK } from "@/hooks/use-fabstir-sdk";
 import { useHosts } from "@/hooks/use-hosts";
 import { useChatSession } from "@/hooks/use-chat-session";
 import { useBalances } from "@/hooks/use-balances";
+import { useBaseAccount } from "@/hooks/use-base-account";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, Sparkles } from "lucide-react";
+import { Loader2, RefreshCw, Sparkles, Zap } from "lucide-react";
 
 export default function ChatPage() {
   const {
+    sdk,
     isInitializing,
     isAuthenticated,
     userAddress,
@@ -29,12 +32,27 @@ export default function ChatPage() {
   } = useFabstirSDK();
 
   const {
+    connectWithBaseAccount,
+    accountInfo,
+    isConnecting: isConnectingBase,
+    getSdk,
+  } = useBaseAccount();
+
+  // Get managers from Base Account SDK if connected that way
+  const baseAccountSdk = getSdk();
+  const effectiveHostManager = baseAccountSdk?.getHostManager() || hostManager;
+  const effectiveSessionManager = baseAccountSdk?.getSessionManager() || sessionManager;
+  const effectivePaymentManager = baseAccountSdk?.getPaymentManager() || paymentManager;
+
+  const [usdcAddress, setUsdcAddress] = useState<string>("");
+
+  const {
     availableHosts,
     selectedHost,
     setSelectedHost,
     isDiscoveringHosts,
     discoverHosts,
-  } = useHosts(hostManager);
+  } = useHosts(effectiveHostManager);
 
   const {
     messages,
@@ -48,12 +66,54 @@ export default function ChatPage() {
     isSendingMessage,
     endSession,
     isEndingSession,
-  } = useChatSession(sessionManager, selectedHost);
+  } = useChatSession(
+    effectiveSessionManager,
+    selectedHost,
+    effectivePaymentManager,
+    accountInfo?.subAccount || userAddress
+  );
 
   const { usdcBalance, ethBalance, isLoading: isLoadingBalances } = useBalances(
-    paymentManager,
-    userAddress
+    effectivePaymentManager,
+    accountInfo?.subAccount || userAddress
   );
+
+  // Handler for Base Account connection
+  const handleBaseAccountConnect = async () => {
+    try {
+      // Import SDK and initialize if needed
+      const { FabstirSDKCore, ChainRegistry, ChainId } = await import("@fabstir/sdk-core");
+      const chain = ChainRegistry.getChain(ChainId.BASE_SEPOLIA);
+
+      // Create SDK if not exists
+      let sdkInstance = sdk;
+      if (!sdkInstance) {
+        const sdkConfig = {
+          mode: "production" as const,
+          chainId: ChainId.BASE_SEPOLIA,
+          rpcUrl: process.env.NEXT_PUBLIC_RPC_URL_BASE_SEPOLIA!,
+          contractAddresses: {
+            jobMarketplace: chain.contracts.jobMarketplace,
+            nodeRegistry: chain.contracts.nodeRegistry,
+            proofSystem: chain.contracts.proofSystem,
+            hostEarnings: chain.contracts.hostEarnings,
+            fabToken: chain.contracts.fabToken,
+            usdcToken: chain.contracts.usdcToken,
+            modelRegistry: chain.contracts.modelRegistry,
+          },
+          s5Config: {
+            portalUrl: process.env.NEXT_PUBLIC_S5_PORTAL_URL,
+          },
+        };
+        sdkInstance = new FabstirSDKCore(sdkConfig);
+      }
+
+      // Connect with Base Account
+      await connectWithBaseAccount(sdkInstance, chain.contracts.usdcToken, ChainId.BASE_SEPOLIA);
+    } catch (error) {
+      console.error("Base Account connection failed:", error);
+    }
+  };
 
   if (isInitializing) {
     return (
@@ -82,7 +142,7 @@ export default function ChatPage() {
         </div>
 
         {/* Wallet Connection Card */}
-        {!isAuthenticated && (
+        {!isAuthenticated && !isMockMode && !accountInfo && (
           <Card className="max-w-2xl mx-auto">
             <CardHeader>
               <CardTitle>Connect Your Wallet</CardTitle>
@@ -91,15 +151,37 @@ export default function ChatPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <WalletConnectButton />
+                <Button
+                  onClick={handleBaseAccountConnect}
+                  disabled={isConnectingBase}
+                  variant="outline"
+                  size="lg"
+                  className="gap-2"
+                >
+                  {isConnectingBase ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-4 w-4" />
+                      Connect with Base Account (Popup-Free)
+                    </>
+                  )}
+                </Button>
               </div>
+              <p className="text-xs text-center text-muted-foreground">
+                Base Account: First transaction requires ONE popup for permission. Subsequent transactions are popup-free! ✨
+              </p>
             </CardContent>
           </Card>
         )}
 
         {/* SDK Status (when wallet connected) */}
-        {isAuthenticated && (
+        {(isAuthenticated || accountInfo) && (
           <Card className="max-w-2xl mx-auto">
             <CardContent className="p-4">
               <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -107,22 +189,28 @@ export default function ChatPage() {
                   <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
                     Connected
                   </Badge>
+                  {accountInfo?.isUsingBaseAccount && (
+                    <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-500/30 gap-1">
+                      <Zap className="h-3 w-3" />
+                      Base Account
+                    </Badge>
+                  )}
                   <span className="text-sm font-mono">
-                    {userAddress.slice(0, 6)}...{userAddress.slice(-4)}
+                    {(accountInfo?.subAccount || userAddress).slice(0, 6)}...{(accountInfo?.subAccount || userAddress).slice(-4)}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs">
-                    <div className={`h-2 w-2 rounded-full ${sessionManager ? "bg-green-500" : "bg-gray-400"}`} />
+                    <div className={`h-2 w-2 rounded-full ${effectiveSessionManager ? "bg-green-500" : "bg-gray-400"}`} />
                     <span>Session</span>
                   </div>
                   <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs">
-                    <div className={`h-2 w-2 rounded-full ${paymentManager ? "bg-green-500" : "bg-gray-400"}`} />
+                    <div className={`h-2 w-2 rounded-full ${effectivePaymentManager ? "bg-green-500" : "bg-gray-400"}`} />
                     <span>Payment</span>
                   </div>
                   <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs">
-                    <div className={`h-2 w-2 rounded-full ${hostManager ? "bg-green-500" : "bg-gray-400"}`} />
+                    <div className={`h-2 w-2 rounded-full ${effectiveHostManager ? "bg-green-500" : "bg-gray-400"}`} />
                     <span>Host</span>
                   </div>
                 </div>
@@ -132,7 +220,7 @@ export default function ChatPage() {
         )}
 
         {/* Host Discovery */}
-        {isAuthenticated && (
+        {(isAuthenticated || accountInfo) && (
           <Card className="max-w-4xl mx-auto">
             <CardHeader>
               <div className="flex justify-between items-center">
@@ -173,7 +261,7 @@ export default function ChatPage() {
         )}
 
         {/* Payment Mode Tabs & Chat (only when host selected) */}
-        {isAuthenticated && selectedHost && (
+        {(isAuthenticated || accountInfo) && selectedHost && (
           <div className="max-w-6xl mx-auto">
             <PaymentModeTabs defaultMode="usdc">
               <div className="space-y-4">
