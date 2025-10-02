@@ -4,12 +4,40 @@ import "./globals.css";
 import { Providers } from "./providers";
 import { AppHeader } from "@/components/app-header";
 import { Toaster } from "@/components/ui/toaster";
+import { SkipNav } from "@/components/skip-nav";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Fabstir LLM Chat",
-  description: "A P2P marketplace for AI conversations",
+  description: "Democratizing AI, One Inference at a Time - P2P LLM Marketplace",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Fabstir",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Fabstir LLM Chat",
+    title: "Fabstir LLM Chat",
+    description: "Democratizing AI, One Inference at a Time",
+  },
+  twitter: {
+    card: "summary",
+    title: "Fabstir LLM Chat",
+    description: "Democratizing AI, One Inference at a Time",
+  },
+};
+
+export const viewport = {
+  themeColor: "#540074",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({
@@ -20,12 +48,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <SkipNav />
         <Providers>
           <div className="min-h-screen flex flex-col">
             <AppHeader />
-            <div className="flex-1">
+            <main id="main-content" className="flex-1" tabIndex={-1}>
               {children}
-            </div>
+            </main>
           </div>
           <Toaster />
         </Providers>

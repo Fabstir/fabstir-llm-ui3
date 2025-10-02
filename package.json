@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "analyze": "ANALYZE=true npm run build"
   },
   "dependencies": {
     "@assistant-ui/react": "latest",
@@ -44,6 +45,8 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@ducanh2912/next-pwa": "^10.2.9",
+    "@next/bundle-analyzer": "^15.5.4",
     "@types/node": "^22.18.8",
     "@types/react": "^18.3.25",
     "@types/react-dom": "^18.3.7",

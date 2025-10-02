@@ -1,14 +1,22 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { ChatMessage } from "@/types/chat";
 import { ParsedHost } from "@/types/host";
 import { IS_MOCK_MODE } from "@/lib/constants";
+import { useS5Storage } from "@/hooks/use-s5-storage";
+import { useAnalytics } from "@/lib/analytics";
+import {
+  messageRateLimiter,
+  sessionRateLimiter,
+  getUserIdentifier,
+} from "@/lib/rate-limit";
 
 // SDK types
 type SessionManager = any;
+type StorageManager = any;
 
 // Session configuration constants
 const SESSION_DEPOSIT = "2.0";
@@ -30,7 +38,8 @@ export function useChatSession(
   sessionManager: SessionManager | null,
   selectedHost: ParsedHost | null,
   paymentManager?: any,
-  userAddress?: string
+  userAddress?: string,
+  storageManager?: StorageManager | null
 ) {
   const { toast } = useToast();
 
@@ -40,10 +49,30 @@ export function useChatSession(
   const [totalCost, setTotalCost] = useState(0);
   const [isApprovalDone, setIsApprovalDone] = useState(false);
 
+  // S5 storage integration
+  const { storeConversation, isStorageReady } = useS5Storage(
+    storageManager || null,
+    sessionId,
+    selectedHost
+  );
+
+  // Analytics integration
+  const analytics = useAnalytics();
+
   // Mutation: Start session
   const startSessionMutation = useMutation({
     mutationFn: async () => {
       if (!selectedHost) throw new Error("No host selected");
+
+      // Rate limit check for session creation
+      const identifier = getUserIdentifier(userAddress);
+      const rateLimitResult = sessionRateLimiter.check(identifier);
+      if (!rateLimitResult.success) {
+        const resetIn = Math.ceil((rateLimitResult.reset - Date.now()) / 1000 / 60);
+        throw new Error(
+          `Rate limit exceeded. Please wait ${resetIn} minutes before creating a new session.`
+        );
+      }
 
       // Mock mode: Simulate session start
       if (IS_MOCK_MODE) {
@@ -112,6 +141,13 @@ export function useChatSession(
       setSessionId(result.sessionId);
       (window as any).__currentSessionId = result.sessionId;
 
+      // Track session start
+      analytics.sessionStarted(
+        result.sessionId.toString(),
+        selectedHost?.address || "unknown",
+        selectedHost?.models[0] || "unknown"
+      );
+
       addMessage(
         "system",
         `✅ Session started! Deposited $${SESSION_DEPOSIT} USDC. You can now chat with ${selectedHost?.models[0]}.`
@@ -136,6 +172,16 @@ export function useChatSession(
     mutationFn: async (prompt: string) => {
       if (!sessionId) {
         throw new Error("No active session");
+      }
+
+      // Rate limit check for messages
+      const identifier = getUserIdentifier(userAddress);
+      const rateLimitResult = messageRateLimiter.check(identifier);
+      if (!rateLimitResult.success) {
+        const resetIn = Math.ceil((rateLimitResult.reset - Date.now()) / 1000);
+        throw new Error(
+          `Too many messages. Please wait ${resetIn} seconds before sending another message.`
+        );
       }
 
       // Mock mode: Simulate AI response
@@ -164,14 +210,31 @@ export function useChatSession(
       return { response, prompt };
     },
     onMutate: (prompt) => {
+      // Track message sent
+      if (sessionId) {
+        analytics.messageSent(sessionId.toString(), prompt.length);
+      }
+
       // Optimistically add user message
       addMessage("user", prompt);
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       const cleaned = cleanResponse(data.response);
       const tokens = Math.ceil((data.prompt.length + cleaned.length) / 4);
 
+      // Track message received
+      if (sessionId) {
+        analytics.messageReceived(sessionId.toString(), tokens);
+      }
+
       addMessage("assistant", cleaned, tokens);
+
+      // Auto-save conversation to S5 after each message
+      if (isStorageReady && messages.length > 0) {
+        const updatedTokens = totalTokens + tokens;
+        const updatedCost = totalCost + (tokens * PRICE_PER_TOKEN) / 1000000;
+        await storeConversation([...messages], updatedTokens, updatedCost);
+      }
     },
     onError: (error: any) => {
       addMessage("system", `❌ Error: ${error.message}`);
@@ -190,6 +253,11 @@ export function useChatSession(
         throw new Error("No active session");
       }
 
+      // Save conversation before ending session
+      if (isStorageReady && messages.length > 0) {
+        await storeConversation(messages, totalTokens, totalCost);
+      }
+
       // Mock mode: Simulate session end
       if (IS_MOCK_MODE) {
         console.log("Mock: Ending session");
@@ -202,6 +270,16 @@ export function useChatSession(
       await sessionManager.endSession(sessionId);
     },
     onSuccess: () => {
+      // Track session end
+      if (sessionId) {
+        analytics.sessionEnded(
+          sessionId.toString(),
+          totalTokens,
+          totalCost,
+          messages.length
+        );
+      }
+
       addMessage(
         "system",
         `✅ Session ended. Total tokens: ${totalTokens}, Total cost: $${totalCost.toFixed(4)}`
@@ -211,7 +289,7 @@ export function useChatSession(
 
       toast({
         title: "Session Ended",
-        description: "Payments have been distributed",
+        description: "Conversation saved to S5. Payments distributed.",
       });
     },
     onError: (error: any) => {

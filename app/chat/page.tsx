@@ -14,6 +14,9 @@ import { useHosts } from "@/hooks/use-hosts";
 import { useChatSession } from "@/hooks/use-chat-session";
 import { useBalances } from "@/hooks/use-balances";
 import { useBaseAccount } from "@/hooks/use-base-account";
+import { useGlobalKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { useSessionRecovery, useAutoSaveSession } from "@/hooks/use-session-recovery";
+import { SessionRecoveryBanner } from "@/components/session-recovery-banner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +32,7 @@ export default function ChatPage() {
     sessionManager,
     paymentManager,
     hostManager,
+    storageManager,
   } = useFabstirSDK();
 
   const {
@@ -43,6 +47,7 @@ export default function ChatPage() {
   const effectiveHostManager = baseAccountSdk?.getHostManager() || hostManager;
   const effectiveSessionManager = baseAccountSdk?.getSessionManager() || sessionManager;
   const effectivePaymentManager = baseAccountSdk?.getPaymentManager() || paymentManager;
+  const effectiveStorageManager = baseAccountSdk?.getStorageManager() || storageManager;
 
   const [usdcAddress, setUsdcAddress] = useState<string>("");
 
@@ -70,13 +75,49 @@ export default function ChatPage() {
     effectiveSessionManager,
     selectedHost,
     effectivePaymentManager,
-    accountInfo?.subAccount || userAddress
+    accountInfo?.subAccount || userAddress,
+    effectiveStorageManager
   );
 
   const { usdcBalance, ethBalance, isLoading: isLoadingBalances } = useBalances(
     effectivePaymentManager,
     accountInfo?.subAccount || userAddress
   );
+
+  // Keyboard shortcuts
+  useGlobalKeyboardShortcuts(
+    () => {
+      if (isSessionActive) {
+        endSession();
+      }
+    },
+    () => {
+      // Show keyboard shortcuts help
+      console.log("Keyboard shortcuts: Ctrl+N (New chat), Ctrl+/ (Help), Escape (Close)");
+    }
+  );
+
+  // Session recovery
+  const {
+    recoveredSession,
+    saveSession,
+    clearSession,
+    dismissRecovery,
+    hasRecoverableSession,
+  } = useSessionRecovery();
+
+  // Auto-save session state
+  useAutoSaveSession(sessionId, messages, selectedHost, totalTokens, totalCost);
+
+  // Handler for recovering session
+  const handleRecoverSession = () => {
+    if (!recoveredSession) return;
+
+    // Note: In production, you would need to re-authenticate with the SDK
+    // and restore the session state. For now, we just dismiss the banner.
+    console.log("Recovering session:", recoveredSession);
+    dismissRecovery();
+  };
 
   // Handler for Base Account connection
   const handleBaseAccountConnect = async () => {
@@ -140,6 +181,17 @@ export default function ChatPage() {
             Connect your wallet, select a host, and start chatting with AI models on the decentralized Fabstir network
           </p>
         </div>
+
+        {/* Session Recovery Banner */}
+        {hasRecoverableSession && recoveredSession && (
+          <div className="max-w-4xl mx-auto">
+            <SessionRecoveryBanner
+              session={recoveredSession}
+              onRecover={handleRecoverSession}
+              onDismiss={dismissRecovery}
+            />
+          </div>
+        )}
 
         {/* Wallet Connection Card */}
         {!isAuthenticated && !isMockMode && !accountInfo && (
