@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Logo, ShimmerText } from "@/components/brand";
 import { cn } from "@/lib/utils";
-import { MessageSquare, Settings, Home, Sparkles } from "lucide-react";
+import { MessageSquare, Settings, Home } from "lucide-react";
 import { useFabstirSDK } from "@/hooks/use-fabstir-sdk";
 
 export function AppHeader() {
@@ -24,13 +25,18 @@ export function AppHeader() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo and Brand */}
-          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <Sparkles className="h-8 w-8 text-primary" />
+          <Link
+            href="/"
+            className="flex items-center gap-3 group transition-all duration-300 hover:scale-105"
+          >
+            <Logo size="md" animated />
             <div className="flex flex-col">
-              <span className="text-xl font-bold bg-gradient-to-r from-primary to-pink-500 bg-clip-text text-transparent">
-                Fabstir LLM Chat
+              <span className="text-xl font-bold">
+                <ShimmerText>Fabstir LLM Chat</ShimmerText>
               </span>
-              <span className="text-xs text-muted-foreground">P2P AI Marketplace</span>
+              <span className="text-xs text-muted-foreground group-hover:text-primary/80 transition-colors">
+                P2P AI Marketplace
+              </span>
             </div>
           </Link>
 
@@ -44,13 +50,14 @@ export function AppHeader() {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-300",
+                    "hover:scale-105 active:scale-95",
                     isActive
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-primary/10 text-primary shadow-sm"
                       : "text-muted-foreground hover:text-foreground hover:bg-accent"
                   )}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className={cn("h-4 w-4 transition-transform", isActive && "animate-bounce-subtle")} />
                   {item.label}
                 </Link>
               );

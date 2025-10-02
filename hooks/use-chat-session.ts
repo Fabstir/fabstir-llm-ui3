@@ -48,6 +48,7 @@ export function useChatSession(
   const [totalTokens, setTotalTokens] = useState(0);
   const [totalCost, setTotalCost] = useState(0);
   const [isApprovalDone, setIsApprovalDone] = useState(false);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
   // S5 storage integration
   const { storeConversation, isStorageReady } = useS5Storage(
@@ -122,7 +123,7 @@ export function useChatSession(
       // Step 2: Start session
       const config: any = {
         depositAmount: SESSION_DEPOSIT,
-        pricePerToken: PRICE_PER_TOKEN,
+        pricePerToken: Number(PRICE_PER_TOKEN), // Ensure it's a number, not bigint
         duration: SESSION_DURATION,
         proofInterval: PROOF_INTERVAL,
         model: selectedHost.models[0],
@@ -134,7 +135,13 @@ export function useChatSession(
         chainId: 84532, // Base Sepolia
       };
 
+      console.log("🚀 Starting session with config:", {
+        ...config,
+        model: config.model.slice(0, 20) + '...',
+      });
+
       const result = await sessionManager.startSession(config);
+      console.log("✅ Session started successfully:", result);
       return result;
     },
     onSuccess: (result) => {
@@ -159,9 +166,27 @@ export function useChatSession(
       });
     },
     onError: (error: any) => {
+      console.error("❌ Session creation failed:", error);
+      console.error("Error details:", {
+        message: error.message,
+        code: error.code,
+        data: error.data,
+        reason: error.reason,
+        transaction: error.transaction,
+      });
+
+      let errorMessage = error.message;
+
+      // Extract revert reason if available
+      if (error.reason) {
+        errorMessage = error.reason;
+      } else if (error.data?.message) {
+        errorMessage = error.data.message;
+      }
+
       toast({
         title: "Session Creation Failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -284,11 +309,18 @@ export function useChatSession(
         "system",
         `✅ Session ended. Total tokens: ${totalTokens}, Total cost: $${totalCost.toFixed(4)}`
       );
+
+      // Show success animation
+      setShowSuccessAnimation(true);
+      setTimeout(() => {
+        setShowSuccessAnimation(false);
+      }, 2000);
+
       setSessionId(null);
       (window as any).__currentSessionId = null;
 
       toast({
-        title: "Session Ended",
+        title: "Session Ended Successfully! 🎉",
         description: "Conversation saved to S5. Payments distributed.",
       });
     },
@@ -358,5 +390,6 @@ export function useChatSession(
     endSession: endSessionMutation.mutate,
     isEndingSession: endSessionMutation.isPending,
     clearMessages,
+    showSuccessAnimation,
   };
 }

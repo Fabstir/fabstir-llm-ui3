@@ -127,6 +127,12 @@ export function useBaseAccount() {
           isUsingBaseAccount: true,
         };
 
+        console.log("🔍 Base Account Setup:");
+        console.log("  - EOA (MetaMask/Rainbow):", walletAddress);
+        console.log("  - PRIMARY Account (Smart Wallet - holds USDC):", smartWallet);
+        console.log("  - SUB Account (Spender - sends transactions):", subAccountAddress);
+        console.log("💡 Workflow: Deposit USDC to PRIMARY, SUB-account uses it via spend permissions");
+
         setAccountInfo(info);
 
         toast({

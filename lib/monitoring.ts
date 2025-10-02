@@ -23,8 +23,12 @@ class ErrorMonitoring {
   private errors: ErrorReport[] = [];
   private maxErrors = 100;
   private enabled = true;
+  private originalConsoleError: typeof console.error;
 
   constructor() {
+    // Save original console.error before overriding it
+    this.originalConsoleError = console.error.bind(console);
+
     if (typeof window !== "undefined") {
       // Initialize error monitoring
       this.setupGlobalErrorHandlers();
@@ -62,18 +66,18 @@ class ErrorMonitoring {
       );
     });
 
-    // Catch console errors (optional)
-    const originalError = console.error;
-    console.error = (...args) => {
-      this.captureError(new Error(args.join(" ")), {
-        severity: "medium",
-        context: {
-          component: "console",
-          action: "console_error",
-        },
-      });
-      originalError.apply(console, args);
-    };
+    // Catch console errors (optional) - DISABLED to prevent infinite loops
+    // const originalError = console.error;
+    // console.error = (...args) => {
+    //   this.captureError(new Error(args.join(" ")), {
+    //     severity: "medium",
+    //     context: {
+    //       component: "console",
+    //       action: "console_error",
+    //     },
+    //   });
+    //   originalError.apply(console, args);
+    // };
   }
 
   captureError(
@@ -84,7 +88,7 @@ class ErrorMonitoring {
     }
   ) {
     if (!this.enabled) {
-      console.error("[Monitoring]", error, options);
+      this.originalConsoleError("[Monitoring]", error, options);
       return;
     }
 
@@ -113,9 +117,9 @@ class ErrorMonitoring {
     // Store in localStorage for debugging
     this.storeError(report);
 
-    // Log to console in development
+    // Log to console in development (use original console.error to prevent infinite loop)
     if (process.env.NODE_ENV === "development") {
-      console.error("[Error Monitoring]", report);
+      this.originalConsoleError("[Error Monitoring]", report);
     }
   }
 

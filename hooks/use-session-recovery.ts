@@ -41,6 +41,11 @@ export function useSessionRecovery() {
         return;
       }
 
+      // Convert stake back to BigInt if present
+      if (session.selectedHost && typeof session.selectedHost.stake === 'string') {
+        session.selectedHost.stake = BigInt(session.selectedHost.stake);
+      }
+
       setRecoveredSession(session);
     } catch (error) {
       console.error("Failed to recover session:", error);
@@ -62,13 +67,21 @@ export function useSessionRecovery() {
         const session: RecoverableSession = {
           sessionId: sessionId.toString(),
           messages,
-          selectedHost,
+          selectedHost: selectedHost ? {
+            ...selectedHost,
+            stake: selectedHost.stake.toString(), // Convert BigInt to string for serialization
+          } : selectedHost,
           totalTokens,
           totalCost,
           timestamp: Date.now(),
         };
 
-        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+        // Custom JSON serializer that handles BigInt
+        const serialized = JSON.stringify(session, (key, value) =>
+          typeof value === 'bigint' ? value.toString() : value
+        );
+
+        localStorage.setItem(SESSION_STORAGE_KEY, serialized);
       } catch (error) {
         console.error("Failed to save session:", error);
       }

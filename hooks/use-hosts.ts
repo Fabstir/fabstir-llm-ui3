@@ -46,14 +46,36 @@ export function useHosts(hostManager: HostManager | null) {
 
       const hosts = await hostManager.discoverAllActiveHostsWithModels();
 
-      const parsedHosts: ParsedHost[] = hosts
-        .map((host: any) => ({
-          address: host.address,
-          endpoint: host.apiUrl || host.endpoint || "",
-          models: host.supportedModels || [],
-          stake: host.stake || BigInt(0),
-        }))
-        .filter((h: ParsedHost) => h.models.length > 0 && h.endpoint);
+      // Parse hosts and fetch detailed status (including stake) for each
+      const parsedHostsPromises = hosts
+        .filter((host: any) =>
+          (host.supportedModels || []).length > 0 &&
+          (host.apiUrl || host.endpoint)
+        )
+        .map(async (host: any) => {
+          try {
+            // Get detailed host status to retrieve stake information
+            const hostStatus = await hostManager.getHostStatus(host.address);
+
+            return {
+              address: host.address,
+              endpoint: host.apiUrl || host.endpoint || "",
+              models: host.supportedModels || [],
+              stake: hostStatus.stake || BigInt(0),
+            };
+          } catch (error) {
+            console.warn(`Failed to get status for host ${host.address}:`, error);
+            // Fallback to host data without stake
+            return {
+              address: host.address,
+              endpoint: host.apiUrl || host.endpoint || "",
+              models: host.supportedModels || [],
+              stake: host.stake || BigInt(0),
+            };
+          }
+        });
+
+      const parsedHosts = await Promise.all(parsedHostsPromises);
 
       return parsedHosts;
     },

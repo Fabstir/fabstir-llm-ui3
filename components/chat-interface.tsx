@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { ChatEmptyState, ThinkingAnimation } from "@/components/brand";
 import { cn } from "@/lib/utils";
 import { ChatMessage } from "@/types/chat";
 
@@ -58,11 +59,9 @@ export function ChatInterface({
               key="empty-state"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center justify-center h-full text-center text-muted-foreground"
+              className="flex items-center justify-center min-h-[400px]"
             >
-              <Bot className="w-16 h-16 mb-4 opacity-50" />
-              <p className="text-lg font-medium">No messages yet</p>
-              <p className="text-sm">Start a conversation with the AI</p>
+              <ChatEmptyState />
             </motion.div>
           )}
 
@@ -133,12 +132,7 @@ export function ChatInterface({
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 rounded-lg p-4 bg-muted mr-12">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span className="text-sm text-muted-foreground">
-                    AI is thinking...
-                  </span>
-                </div>
+                <ThinkingAnimation />
               </div>
             </motion.div>
           )}
@@ -166,12 +160,12 @@ export function ChatInterface({
             type="submit"
             disabled={!isSessionActive || !input.trim() || isSending}
             size="lg"
-            className="h-auto"
+            className="h-auto transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-lg hover:shadow-primary/50"
           >
             {isSending ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              <Send className="w-5 h-5" />
+              <Send className="w-5 h-5 transition-transform group-hover:translate-x-1" />
             )}
           </Button>
         </form>

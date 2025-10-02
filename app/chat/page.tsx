@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
 import { HostSelector } from "@/components/host-selector";
 import { ChatInterface } from "@/components/chat-interface";
@@ -12,15 +12,17 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { useFabstirSDK } from "@/hooks/use-fabstir-sdk";
 import { useHosts } from "@/hooks/use-hosts";
 import { useChatSession } from "@/hooks/use-chat-session";
-import { useBalances } from "@/hooks/use-balances";
+import { useBalances, useHasSufficientBalance } from "@/hooks/use-balances";
 import { useBaseAccount } from "@/hooks/use-base-account";
 import { useGlobalKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useSessionRecovery, useAutoSaveSession } from "@/hooks/use-session-recovery";
 import { SessionRecoveryBanner } from "@/components/session-recovery-banner";
+import { SuccessAnimation } from "@/components/brand";
+import { USDCDeposit } from "@/components/usdc-deposit";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, Sparkles, Zap } from "lucide-react";
+import { Loader2, RefreshCw, Sparkles, Zap, Wallet } from "lucide-react";
 
 export default function ChatPage() {
   const {
@@ -41,6 +43,17 @@ export default function ChatPage() {
     isConnecting: isConnectingBase,
     getSdk,
   } = useBaseAccount();
+
+  // Log account addresses for debugging (only once when accountInfo changes)
+  useEffect(() => {
+    if (accountInfo) {
+      console.log('💰 Account Info:', {
+        primaryAccount: accountInfo.primaryAccount,
+        subAccount: accountInfo.subAccount,
+        isUsingBaseAccount: accountInfo.isUsingBaseAccount,
+      });
+    }
+  }, [accountInfo?.primaryAccount, accountInfo?.subAccount]);
 
   // Get managers from Base Account SDK if connected that way
   const baseAccountSdk = getSdk();
@@ -71,6 +84,7 @@ export default function ChatPage() {
     isSendingMessage,
     endSession,
     isEndingSession,
+    showSuccessAnimation,
   } = useChatSession(
     effectiveSessionManager,
     selectedHost,
@@ -82,6 +96,13 @@ export default function ChatPage() {
   const { usdcBalance, ethBalance, isLoading: isLoadingBalances } = useBalances(
     effectivePaymentManager,
     accountInfo?.subAccount || userAddress
+  );
+
+  // Check if user has sufficient balance to start a session
+  const { hasEnough, balance, checkingAddress, isLoading: isCheckingBalance } = useHasSufficientBalance(
+    accountInfo,
+    userAddress,
+    2.0 // $2 USDC minimum for session
   );
 
   // Keyboard shortcuts
@@ -194,39 +215,103 @@ export default function ChatPage() {
         )}
 
         {/* Wallet Connection Card */}
-        {!isAuthenticated && !isMockMode && !accountInfo && (
+        {!isMockMode && (!isAuthenticated || !accountInfo) && (
           <Card className="max-w-2xl mx-auto">
             <CardHeader>
-              <CardTitle>Connect Your Wallet</CardTitle>
+              <CardTitle>Connect Your Wallets</CardTitle>
               <CardDescription>
-                Connect your wallet to start chatting with AI models on the Fabstir network
+                {!accountInfo && !isAuthenticated && "Connect Base Account for popup-free transactions, then connect regular wallet to fund it"}
+                {accountInfo && !isAuthenticated && "Connect regular wallet (MetaMask/Rainbow) to deposit USDC"}
+                {!accountInfo && isAuthenticated && "Connect Base Account for popup-free transactions"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <WalletConnectButton />
-                <Button
-                  onClick={handleBaseAccountConnect}
-                  disabled={isConnectingBase}
-                  variant="outline"
-                  size="lg"
-                  className="gap-2"
-                >
-                  {isConnectingBase ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Connecting...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4" />
-                      Connect with Base Account (Popup-Free)
-                    </>
-                  )}
-                </Button>
+              <div className="grid sm:grid-cols-2 gap-3">
+                {/* Base Account Connection */}
+                <div className={`p-4 rounded-lg border-2 ${accountInfo ? 'border-green-500 bg-green-500/5' : 'border-dashed border-muted-foreground/30'}`}>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      {accountInfo ? (
+                        <>
+                          <div className="h-2 w-2 rounded-full bg-green-500" />
+                          <span className="font-semibold text-sm">Base Account Connected</span>
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-semibold text-sm">Base Account</span>
+                        </>
+                      )}
+                    </div>
+                    {accountInfo ? (
+                      <div className="text-xs text-muted-foreground">
+                        ✅ Popup-free transactions enabled
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-xs text-muted-foreground">
+                          Popup-free AI sessions
+                        </p>
+                        <Button
+                          onClick={handleBaseAccountConnect}
+                          disabled={isConnectingBase}
+                          variant="outline"
+                          size="sm"
+                          className="w-full gap-2"
+                        >
+                          {isConnectingBase ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Connecting...
+                            </>
+                          ) : (
+                            <>
+                              <Zap className="h-4 w-4" />
+                              Connect
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* EOA Wallet Connection */}
+                <div className={`p-4 rounded-lg border-2 ${isAuthenticated ? 'border-green-500 bg-green-500/5' : 'border-dashed border-muted-foreground/30'}`}>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      {isAuthenticated ? (
+                        <>
+                          <div className="h-2 w-2 rounded-full bg-green-500" />
+                          <span className="font-semibold text-sm">Wallet Connected</span>
+                        </>
+                      ) : (
+                        <>
+                          <Wallet className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-semibold text-sm">Regular Wallet</span>
+                        </>
+                      )}
+                    </div>
+                    {isAuthenticated ? (
+                      <div className="text-xs text-muted-foreground">
+                        ✅ Ready to deposit USDC
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-xs text-muted-foreground">
+                          Fund Base Account
+                        </p>
+                        <div className="w-full">
+                          <WalletConnectButton />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
+
               <p className="text-xs text-center text-muted-foreground">
-                Base Account: First transaction requires ONE popup for permission. Subsequent transactions are popup-free! ✨
+                💡 <strong>Both wallets needed:</strong> Base Account for popup-free transactions, regular wallet to initially fund it
               </p>
             </CardContent>
           </Card>
@@ -269,6 +354,21 @@ export default function ChatPage() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* USDC Deposit (Base Account only) */}
+        {accountInfo?.isUsingBaseAccount && accountInfo.primaryAccount && (
+          <div className="max-w-4xl mx-auto">
+            <USDCDeposit
+              primaryAccount={accountInfo.primaryAccount}
+              subAccount={accountInfo.subAccount}
+              usdcAddress={process.env.NEXT_PUBLIC_CONTRACT_USDC_TOKEN!}
+              onDepositComplete={async () => {
+                // Refresh balances after deposit
+                console.log("Deposit complete, refreshing balances...");
+              }}
+            />
+          </div>
         )}
 
         {/* Host Discovery */}
@@ -346,6 +446,12 @@ export default function ChatPage() {
                       isStarting={isStartingSession}
                       isEnding={isEndingSession}
                       disabled={!selectedHost}
+                      insufficientBalance={{
+                        hasEnough,
+                        balance,
+                        address: checkingAddress,
+                        isUsingBaseAccount: accountInfo?.isUsingBaseAccount ?? false,
+                      }}
                     />
                   </CardContent>
                 </Card>
@@ -373,6 +479,14 @@ export default function ChatPage() {
           </div>
         )}
       </main>
+
+      {/* Success Animation Overlay */}
+      {showSuccessAnimation && (
+        <SuccessAnimation
+          message="Session ended successfully! 🎉"
+          duration={2000}
+        />
+      )}
     </ErrorBoundary>
   );
 }
