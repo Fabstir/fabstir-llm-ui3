@@ -86,6 +86,7 @@ export default function ChatPage() {
   // Header modal states
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showHostSelector, setShowHostSelector] = useState(false);
   const [isSelectingHost, setIsSelectingHost] = useState(false);
 
   // Check if user is first-time (settings === null) after settings load
@@ -471,47 +472,6 @@ export default function ChatPage() {
           </div>
         )}
 
-        {/* Host Discovery */}
-        {(isAuthenticated || accountInfo) && (
-          <Card className="max-w-4xl mx-auto">
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Select AI Host</CardTitle>
-                  <CardDescription>
-                    Discover available hosts on the Fabstir network
-                  </CardDescription>
-                </div>
-                <Button
-                  onClick={discoverHosts}
-                  disabled={isDiscoveringHosts}
-                  size="sm"
-                >
-                  {isDiscoveringHosts ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Discovering...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Discover Hosts
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <HostSelector
-                hosts={availableHosts}
-                selectedHost={selectedHost}
-                onSelect={setSelectedHost}
-                isLoading={isDiscoveringHosts}
-              />
-            </CardContent>
-          </Card>
-        )}
-
         {/* Payment Mode Tabs & Chat (only when host selected) */}
         {(isAuthenticated || accountInfo) && selectedHost && (
           <div className="max-w-6xl mx-auto">
@@ -583,10 +543,7 @@ export default function ChatPage() {
                   hostAddress={selectedHost?.address}
                   hostEndpoint={selectedHost?.endpoint}
                   hostStake={selectedHost?.stake}
-                  onChangeHost={() => {
-                    // Scroll to host selector or open host selector modal
-                    console.log('Change host clicked - will be implemented in Phase 3');
-                  }}
+                  onChangeHost={() => setShowHostSelector(true)}
                   primaryBalance={primaryBalance}
                   subBalance={balance}
                   onDeposit={() => setShowDepositModal(true)}
@@ -689,6 +646,60 @@ export default function ChatPage() {
           }
         }}
       />
+
+      {/* Host Selector Modal */}
+      <Dialog open={showHostSelector} onOpenChange={setShowHostSelector}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Select AI Host</DialogTitle>
+            <DialogDescription>
+              Choose a host manually or discover more hosts on the network
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Discover Hosts Button */}
+            <div className="flex justify-end">
+              <Button
+                onClick={discoverHosts}
+                disabled={isDiscoveringHosts}
+                size="sm"
+              >
+                {isDiscoveringHosts ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Discovering...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Discover Hosts
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Host Selector */}
+            <HostSelector
+              hosts={availableHosts}
+              selectedHost={selectedHost}
+              onSelect={async (host) => {
+                setSelectedHost(host);
+                // Save to settings
+                await updateSettings({ lastHostAddress: host.address });
+                // Show success toast
+                toast({
+                  title: "Host selected",
+                  description: `Connected to ${host.address.slice(0, 8)}...`,
+                });
+                // Close modal
+                setShowHostSelector(false);
+              }}
+              isLoading={isDiscoveringHosts}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Deposit Modal - Placeholder */}
       <Dialog open={showDepositModal} onOpenChange={setShowDepositModal}>

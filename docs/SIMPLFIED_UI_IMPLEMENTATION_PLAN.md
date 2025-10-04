@@ -277,7 +277,7 @@ app/
 
 ---
 
-## Phase 3: Model-First Selection
+## Phase 3: Model-First Selection ✅
 
 ### Overview
 
@@ -365,14 +365,14 @@ hooks/
 - ✅ User doesn't see host list (unless in Advanced Settings)
 - ✅ Error shown if no compatible hosts
 
-### Sub-Phase 3.3: Move Host Browsing to Advanced Settings
+### Sub-Phase 3.3: Move Host Browsing to Advanced Settings ✅
 
 **Milestones**:
-- [ ] Host selector hidden from main page
-- [ ] "Change Host" button in Advanced Settings
-- [ ] Host selector shown only when clicked
-- [ ] Manual selection still possible
-- [ ] Auto-selection remains default flow
+- [x] Host selector hidden from main page
+- [x] "Change Host" button in Advanced Settings
+- [x] Host selector shown only when clicked
+- [x] Manual selection still possible
+- [x] Auto-selection remains default flow
 
 **Implementation Files**:
 ```
@@ -396,6 +396,8 @@ components/
 - ✅ Manual selection possible
 - ✅ Default: auto-selected host used
 - ✅ Most users never see host selector
+
+**Implementation Complete**: Host selector removed from main page and moved to modal accessible via Advanced Settings panel.
 
 ---
 
