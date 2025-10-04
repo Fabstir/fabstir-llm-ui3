@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Sun, Moon, Laptop, DollarSign, Zap, ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import type { UserSettingsVersion } from '@fabstir/sdk-core';
+import { useAnalytics } from '@/lib/analytics';
 
 // Available models with metadata
 const AVAILABLE_MODELS = [
@@ -46,6 +47,7 @@ interface SetupWizardProps {
 }
 
 export function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
+  const analytics = useAnalytics();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedModel, setSelectedModel] = useState<string>(AVAILABLE_MODELS[0].id);
   const [selectedTheme, setSelectedTheme] = useState<'light' | 'dark' | 'auto'>('auto');
@@ -69,6 +71,10 @@ export function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
   const handleComplete = async () => {
     try {
       setIsSaving(true);
+
+      // Track setup completion before saving
+      analytics.setupCompleted(selectedModel, selectedTheme, selectedPayment);
+
       await onComplete({
         selectedModel,
         theme: selectedTheme,
@@ -152,7 +158,10 @@ export function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                   {AVAILABLE_MODELS.map((model) => (
                     <button
                       key={model.id}
-                      onClick={() => setSelectedModel(model.id)}
+                      onClick={() => {
+                        setSelectedModel(model.id);
+                        analytics.modelSelected(model.id, 'setup');
+                      }}
                       className={`p-4 rounded-lg border-2 text-left transition-all ${
                         selectedModel === model.id
                           ? 'border-primary bg-primary/5'
@@ -210,7 +219,10 @@ export function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
 
                 <div className="grid grid-cols-3 gap-3">
                   <button
-                    onClick={() => setSelectedTheme('light')}
+                    onClick={() => {
+                      setSelectedTheme('light');
+                      analytics.themeChanged('light');
+                    }}
                     className={`p-6 rounded-lg border-2 transition-all ${
                       selectedTheme === 'light'
                         ? 'border-primary bg-primary/5'
@@ -232,7 +244,10 @@ export function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                   </button>
 
                   <button
-                    onClick={() => setSelectedTheme('dark')}
+                    onClick={() => {
+                      setSelectedTheme('dark');
+                      analytics.themeChanged('dark');
+                    }}
                     className={`p-6 rounded-lg border-2 transition-all ${
                       selectedTheme === 'dark'
                         ? 'border-primary bg-primary/5'
@@ -254,7 +269,10 @@ export function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                   </button>
 
                   <button
-                    onClick={() => setSelectedTheme('auto')}
+                    onClick={() => {
+                      setSelectedTheme('auto');
+                      analytics.themeChanged('auto');
+                    }}
                     className={`p-6 rounded-lg border-2 transition-all ${
                       selectedTheme === 'auto'
                         ? 'border-primary bg-primary/5'

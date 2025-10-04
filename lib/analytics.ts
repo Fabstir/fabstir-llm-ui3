@@ -24,7 +24,14 @@ class Analytics {
 
   constructor() {
     if (typeof window !== "undefined") {
-      this.enabled = !window.location.hostname.includes("localhost");
+      // Check environment variable first, then default to production mode
+      const envEnabled = process.env.NEXT_PUBLIC_ANALYTICS_ENABLED;
+      if (envEnabled !== undefined) {
+        this.enabled = envEnabled === 'true';
+      } else {
+        // Default: enabled in production, disabled in development
+        this.enabled = !window.location.hostname.includes("localhost");
+      }
     }
   }
 
@@ -133,6 +140,41 @@ class Analytics {
     });
   }
 
+  // Track user settings events
+  modelSelected(modelId: string, source: 'setup' | 'header' | 'selector') {
+    this.track("model_selected", {
+      modelId,
+      source,
+    });
+  }
+
+  hostAutoSelected(modelId: string) {
+    this.track("host_auto_selected", {
+      modelId,
+      // No wallet addresses or PII
+    });
+  }
+
+  themeChanged(theme: 'light' | 'dark' | 'auto') {
+    this.track("theme_changed", {
+      theme,
+    });
+  }
+
+  settingsReset() {
+    this.track("settings_reset", {
+      timestamp: Date.now(),
+    });
+  }
+
+  setupCompleted(model: string, theme: 'light' | 'dark' | 'auto', paymentToken: 'USDC' | 'ETH') {
+    this.track("setup_completed", {
+      model,
+      theme,
+      paymentToken,
+    });
+  }
+
   // Private methods
   private sendToProvider(event: AnalyticsEvent) {
     // Implement analytics provider integration here
@@ -210,6 +252,13 @@ export function useAnalytics() {
     messageSent: analytics.messageSent.bind(analytics),
     messageReceived: analytics.messageReceived.bind(analytics),
     error: analytics.error.bind(analytics),
+    // User settings events
+    modelSelected: analytics.modelSelected.bind(analytics),
+    hostAutoSelected: analytics.hostAutoSelected.bind(analytics),
+    themeChanged: analytics.themeChanged.bind(analytics),
+    settingsReset: analytics.settingsReset.bind(analytics),
+    setupCompleted: analytics.setupCompleted.bind(analytics),
+    // Data access
     getEvents: analytics.getEvents.bind(analytics),
     getSessionHistory: analytics.getSessionHistory.bind(analytics),
   };

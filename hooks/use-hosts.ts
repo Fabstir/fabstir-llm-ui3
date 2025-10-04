@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ParsedHost } from "@/types/host";
 import { IS_MOCK_MODE, MOCK_WALLET_ADDRESS } from "@/lib/constants";
+import { analytics } from "@/lib/analytics";
 
 type HostManager = any; // Type from SDK
 
@@ -138,6 +139,10 @@ export function useHosts(hostManager: HostManager | null) {
     });
 
     setSelectedHost(selected);
+
+    // Track analytics for auto-selection (no PII - just model ID)
+    analytics.hostAutoSelected(modelId);
+
     return selected;
   };
 

@@ -720,32 +720,38 @@ app/
 - **Chat page integration** - Uses PageLoading for SDK/settings init, SettingsErrorState for settings errors with retry/defaults
 - **Existing empty states** - Leveraged brand/empty-state.tsx for chat messages (already implemented)
 
-### Sub-Phase 5.4: Analytics Integration
+### Sub-Phase 5.4: Analytics Integration ✅
 
 **Milestones**:
-- [ ] Track model selection events
-- [ ] Track host selection events
-- [ ] Track theme changes
-- [ ] Track settings resets
-- [ ] Track setup wizard completion
-- [ ] Privacy-conscious (no PII)
+- [x] Track model selection events
+- [x] Track host selection events
+- [x] Track theme changes
+- [x] Track settings resets
+- [x] Track setup wizard completion
+- [x] Privacy-conscious (no PII)
 
 **Implementation Files**:
 ```
 lib/
 └── analytics.ts                   # Analytics tracking (updated)
+components/
+└── setup-wizard.tsx               # Updated (track setup events)
+app/
+└── chat/page.tsx                  # Updated (track model/theme/reset)
+hooks/
+└── use-hosts.ts                   # Updated (track host auto-selection)
 ```
 
 **Key Tasks**:
-1. Add analytics events to existing `analytics.ts`:
+1. ✅ Add analytics events to existing `analytics.ts`:
    - `model_selected`: { modelId, source: 'setup' | 'header' | 'selector' }
-   - `host_auto_selected`: { hostAddress, modelId }
+   - `host_auto_selected`: { modelId } (NO wallet addresses)
    - `theme_changed`: { theme: 'light' | 'dark' | 'auto' }
    - `settings_reset`: { timestamp }
    - `setup_completed`: { model, theme, paymentToken }
-2. Call analytics on user actions
-3. Ensure no PII tracked (no wallet addresses in events)
-4. Make analytics optional (check env var)
+2. ✅ Call analytics on user actions
+3. ✅ Ensure no PII tracked (no wallet addresses in events)
+4. ✅ Make analytics optional (check env var)
 
 **Success Criteria**:
 - ✅ Events logged to console (dev mode)
@@ -754,6 +760,17 @@ lib/
 - ✅ Analytics optional (respects env var)
 - ✅ Events well-structured and useful
 - ✅ No errors from analytics calls
+
+**Implementation Complete**: Comprehensive analytics tracking integrated:
+- **Analytics class updated** - Added 5 new tracking methods with privacy-first design
+- **Environment configuration** - Checks NEXT_PUBLIC_ANALYTICS_ENABLED env var (optional, defaults to enabled in production)
+- **Setup wizard tracking** - Tracks model selection (source: 'setup'), theme changes, and setup completion
+- **Chat page tracking** - Tracks model selection (source: 'selector'), theme changes after S5 save, settings reset before reset
+- **Smart host selection** - Tracks host auto-selection with model ID only (NO wallet addresses or PII)
+- **useAnalytics hook** - Exports all new methods for React components
+- **Privacy-conscious** - NO wallet addresses, only truncated addresses where needed (already existed for wallet_connected)
+- **Dev mode** - Events logged to console when on localhost
+- **Production mode** - Events stored in localStorage (last 100), ready for analytics provider integration
 
 ### Sub-Phase 5.5: Final Testing & Bug Fixes
 

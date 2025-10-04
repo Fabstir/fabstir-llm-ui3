@@ -27,6 +27,7 @@ import { ModelSelector } from "@/components/model-selector";
 import { OfflineBanner } from "@/components/offline-banner";
 import { PageLoading } from "@/components/loading-states";
 import { SettingsErrorState } from "@/components/empty-states";
+import { useAnalytics } from "@/lib/analytics";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function ChatPage() {
   const { toast } = useToast();
+  const analytics = useAnalytics();
 
   const {
     sdk,
@@ -297,6 +299,9 @@ export default function ChatPage() {
     try {
       // Save to S5 in background (optimistic - UI already updated)
       await updateSettings({ theme });
+
+      // Track analytics after successful save
+      analytics.themeChanged(theme);
     } catch (error: any) {
       console.error('[Theme] Save failed:', error);
       // Show error toast if save fails
@@ -690,6 +695,9 @@ export default function ChatPage() {
                   onResetPreferences={async () => {
                     // Confirmation dialog is handled by SettingsPanel component
                     try {
+                      // Track analytics before reset
+                      analytics.settingsReset();
+
                       await resetSettings();
                       console.log('Preferences reset successfully');
                       // Reload to show setup wizard
@@ -765,6 +773,9 @@ export default function ChatPage() {
             });
 
             console.log('[Model Selector] Settings updated - model and host saved');
+
+            // Track analytics after successful save
+            analytics.modelSelected(modelId, 'selector');
 
             // Show success toast
             toast({
