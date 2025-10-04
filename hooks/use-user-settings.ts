@@ -18,10 +18,12 @@ interface UseUserSettingsReturn {
  *
  * Features:
  * - Loads settings on mount (returns null for first-time users)
+ * - **Optimistic UI updates** - instant feedback, background saves
  * - Auto-saves settings to S5 decentralized storage
  * - 5-minute cache with TTL
- * - Cross-device sync
- * - Graceful offline degradation
+ * - Cross-device sync via S5
+ * - Graceful offline degradation (eventual consistency)
+ * - No loading spinners for settings updates
  *
  * @param storageManager - SDK StorageManager instance
  * @returns Settings state and management functions
@@ -69,7 +71,20 @@ export function useUserSettings(storageManager: StorageManager | null): UseUserS
 
   /**
    * Update specific user settings (partial update)
-   * Saves to S5 and updates local state optimistically
+   *
+   * **Optimistic UI Pattern:**
+   * 1. Updates local state IMMEDIATELY (synchronous via setState)
+   * 2. UI re-renders instantly with new values
+   * 3. Saves to S5 decentralized storage in background (async)
+   * 4. On error: logs warning but DOES NOT revert (eventual consistency)
+   *
+   * This pattern ensures:
+   * - UI feels instant and responsive (no loading spinners)
+   * - Settings persist across devices via S5
+   * - Graceful degradation if S5 is temporarily unavailable
+   *
+   * @param partial - Partial settings object to update
+   * @returns Promise that resolves when S5 save completes (or fails gracefully)
    */
   const updateSettings = useCallback(async (partial: PartialUserSettings) => {
     if (!storageManager) {
@@ -78,7 +93,8 @@ export function useUserSettings(storageManager: StorageManager | null): UseUserS
     }
 
     try {
-      // Optimistic update - update local state immediately
+      // Step 1: Optimistic update - update local state IMMEDIATELY (synchronous)
+      // This causes React to re-render, updating the UI instantly
       setSettings(prev => {
         if (!prev) {
           // If no settings exist, create new settings object
@@ -97,14 +113,15 @@ export function useUserSettings(storageManager: StorageManager | null): UseUserS
         };
       });
 
-      // Save to S5 in background
+      // Step 2: Save to S5 in background (async, doesn't block UI)
       await storageManager.updateUserSettings(partial);
       console.log('[useUserSettings] Settings updated successfully:', partial);
     } catch (err: any) {
       console.error('[useUserSettings] Failed to update settings:', err);
 
-      // Don't revert optimistic update - eventual consistency
-      // Log error but don't block user
+      // Step 3: On error - DON'T revert optimistic update (eventual consistency)
+      // The UI has already updated, user saw instant feedback
+      // S5 will sync when connection is restored
       setError(err.message || 'Failed to update settings');
 
       // Clear error after 3 seconds

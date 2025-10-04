@@ -233,22 +233,24 @@ export default function ChatPage() {
 
   // Handler for theme changes
   const handleThemeChange = async (theme: 'light' | 'dark' | 'auto') => {
+    // Apply theme immediately (optimistic UI)
+    document.documentElement.classList.remove('light', 'dark');
+    if (theme !== 'auto') {
+      document.documentElement.classList.add(theme);
+    }
+
+    // Show immediate feedback (optimistic)
+    toast({
+      title: "Theme updated",
+      description: `Switched to ${theme} mode`,
+    });
+
     try {
-      // Apply theme immediately (optimistic UI)
-      document.documentElement.classList.remove('light', 'dark');
-      if (theme !== 'auto') {
-        document.documentElement.classList.add(theme);
-      }
-
-      // Save to S5
+      // Save to S5 in background (optimistic - UI already updated)
       await updateSettings({ theme });
-
-      toast({
-        title: "Theme updated",
-        description: `Switched to ${theme} mode`,
-      });
     } catch (error: any) {
       console.error('[Theme] Save failed:', error);
+      // Show error toast if save fails
       toast({
         title: "Failed to save theme",
         description: "Theme applied but preference not saved",
@@ -259,15 +261,18 @@ export default function ChatPage() {
 
   // Handler for payment token changes
   const handlePaymentTokenChange = async (token: 'USDC' | 'ETH') => {
-    try {
-      await updateSettings({ preferredPaymentToken: token });
+    // Show immediate feedback (optimistic)
+    toast({
+      title: "Payment token updated",
+      description: `Switched to ${token} for sessions`,
+    });
 
-      toast({
-        title: "Payment token updated",
-        description: `Switched to ${token} for sessions`,
-      });
+    try {
+      // Update settings (optimistic - UI already updated)
+      await updateSettings({ preferredPaymentToken: token });
     } catch (error: any) {
       console.error('[Payment Token] Save failed:', error);
+      // Show error toast if save fails
       toast({
         title: "Failed to save payment preference",
         description: "Preference not saved, please try again",
