@@ -231,6 +231,51 @@ export default function ChatPage() {
     }
   };
 
+  // Handler for theme changes
+  const handleThemeChange = async (theme: 'light' | 'dark' | 'auto') => {
+    try {
+      // Apply theme immediately (optimistic UI)
+      document.documentElement.classList.remove('light', 'dark');
+      if (theme !== 'auto') {
+        document.documentElement.classList.add(theme);
+      }
+
+      // Save to S5
+      await updateSettings({ theme });
+
+      toast({
+        title: "Theme updated",
+        description: `Switched to ${theme} mode`,
+      });
+    } catch (error: any) {
+      console.error('[Theme] Save failed:', error);
+      toast({
+        title: "Failed to save theme",
+        description: "Theme applied but preference not saved",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handler for payment token changes
+  const handlePaymentTokenChange = async (token: 'USDC' | 'ETH') => {
+    try {
+      await updateSettings({ preferredPaymentToken: token });
+
+      toast({
+        title: "Payment token updated",
+        description: `Switched to ${token} for sessions`,
+      });
+    } catch (error: any) {
+      console.error('[Payment Token] Save failed:', error);
+      toast({
+        title: "Failed to save payment preference",
+        description: "Preference not saved, please try again",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Show loading state for SDK initialization or settings loading
   if (isInitializing || loadingSettings) {
     return (
@@ -549,9 +594,19 @@ export default function ChatPage() {
                   onDeposit={() => setShowDepositModal(true)}
                   currentModel={currentModelName}
                   onChangeModel={() => setShowModelSelector(true)}
+                  currentTheme={settings?.theme}
+                  onThemeChange={handleThemeChange}
+                  preferredPaymentToken={settings?.preferredPaymentToken}
+                  onPaymentTokenChange={handlePaymentTokenChange}
                   isExpanded={settings?.advancedSettingsExpanded ?? false}
                   onExpandedChange={async (expanded) => {
-                    await updateSettings({ advancedSettingsExpanded: expanded });
+                    try {
+                      await updateSettings({ advancedSettingsExpanded: expanded });
+                    } catch (error: any) {
+                      console.error('[Advanced Settings] Save failed:', error);
+                      // Don't show toast for panel state (too noisy)
+                      // Graceful degradation: panel still works, just not persisted
+                    }
                   }}
                   onResetPreferences={async () => {
                     if (confirm('Are you sure you want to reset all preferences? This cannot be undone.')) {
@@ -684,16 +739,27 @@ export default function ChatPage() {
               hosts={availableHosts}
               selectedHost={selectedHost}
               onSelect={async (host) => {
-                setSelectedHost(host);
-                // Save to settings
-                await updateSettings({ lastHostAddress: host.address });
-                // Show success toast
-                toast({
-                  title: "Host selected",
-                  description: `Connected to ${host.address.slice(0, 8)}...`,
-                });
-                // Close modal
-                setShowHostSelector(false);
+                try {
+                  setSelectedHost(host);
+                  // Save to settings
+                  await updateSettings({ lastHostAddress: host.address });
+                  // Show success toast
+                  toast({
+                    title: "Host selected",
+                    description: `Connected to ${host.address.slice(0, 8)}...`,
+                  });
+                  // Close modal
+                  setShowHostSelector(false);
+                } catch (error: any) {
+                  console.error('[Host Selector] Save failed:', error);
+                  toast({
+                    title: "Failed to save host preference",
+                    description: "Host selected but preference not saved",
+                    variant: "destructive",
+                  });
+                  // Still close modal and use selected host
+                  setShowHostSelector(false);
+                }
               }}
               isLoading={isDiscoveringHosts}
             />

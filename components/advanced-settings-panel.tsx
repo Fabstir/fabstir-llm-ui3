@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp, Settings, Server, Wallet, Zap, BarChart3, RotateCcw } from 'lucide-react';
+import { ChevronDown, ChevronUp, Settings, Server, Wallet, Zap, BarChart3, RotateCcw, DollarSign, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { PaymentTokenSelector } from '@/components/payment-token-selector';
+import { ThemeSelector } from '@/components/theme-selector';
 
 interface AdvancedSettingsPanelProps {
   // Session details
@@ -29,6 +31,12 @@ interface AdvancedSettingsPanelProps {
   currentModel?: string;
   onChangeModel?: () => void;
 
+  // Preferences
+  currentTheme?: 'light' | 'dark' | 'auto';
+  onThemeChange?: (theme: 'light' | 'dark' | 'auto') => void;
+  preferredPaymentToken?: 'USDC' | 'ETH';
+  onPaymentTokenChange?: (token: 'USDC' | 'ETH') => void;
+
   // Settings
   isExpanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
@@ -50,6 +58,10 @@ export function AdvancedSettingsPanel({
   onDeposit,
   currentModel,
   onChangeModel,
+  currentTheme,
+  onThemeChange,
+  preferredPaymentToken,
+  onPaymentTokenChange,
   isExpanded: controlledExpanded,
   onExpandedChange,
   onResetPreferences,
@@ -215,6 +227,46 @@ export function AdvancedSettingsPanel({
                   <div className="text-sm">
                     <div className="text-muted-foreground">Current Model</div>
                     <div className="font-mono text-xs mt-1">{currentModel}</div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Payment Preference */}
+            {onPaymentTokenChange && (
+              <>
+                <Separator />
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <DollarSign className="h-4 w-4" />
+                    Payment Token
+                  </div>
+                  <PaymentTokenSelector
+                    currentToken={preferredPaymentToken}
+                    onSelectToken={onPaymentTokenChange}
+                  />
+                  <div className="text-xs text-muted-foreground">
+                    Default payment method for new sessions
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Theme */}
+            {onThemeChange && (
+              <>
+                <Separator />
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <Palette className="h-4 w-4" />
+                    Theme
+                  </div>
+                  <ThemeSelector
+                    currentTheme={currentTheme}
+                    onSelectTheme={onThemeChange}
+                  />
+                  <div className="text-xs text-muted-foreground">
+                    Choose your preferred appearance
                   </div>
                 </div>
               </>
