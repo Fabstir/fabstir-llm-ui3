@@ -19,7 +19,7 @@ This document outlines the implementation of a simplified, user-friendly chat in
 
 ---
 
-## Phase 1: User Settings Foundation
+## Phase 1: User Settings Foundation ✅
 
 ### Overview
 
@@ -86,15 +86,15 @@ app/
 - ✅ Loading state shown while fetching settings
 - ✅ No errors if S5 unavailable (use defaults)
 
-### Sub-Phase 1.3: Setup Wizard Component
+### Sub-Phase 1.3: Setup Wizard Component ✅
 
 **Milestones**:
-- [ ] Multi-step wizard component created
-- [ ] Model selection step with pricing info
-- [ ] Theme selection step (light/dark/auto)
-- [ ] Payment token preference step (USDC/ETH)
-- [ ] Settings saved to S5 on completion
-- [ ] Smooth animations between steps
+- [x] Multi-step wizard component created
+- [x] Model selection step with pricing info
+- [x] Theme selection step (light/dark/auto)
+- [x] Payment token preference step (USDC/ETH)
+- [x] Settings saved to S5 on completion
+- [x] Smooth animations between steps
 
 **Implementation Files**:
 ```

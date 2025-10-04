@@ -20,6 +20,7 @@ import { SessionRecoveryBanner } from "@/components/session-recovery-banner";
 import { SuccessAnimation } from "@/components/brand";
 import { USDCDeposit } from "@/components/usdc-deposit";
 import { useUserSettings } from "@/hooks/use-user-settings";
+import { SetupWizard } from "@/components/setup-wizard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -232,30 +233,33 @@ export default function ChatPage() {
       <main className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Setup Wizard for First-Time Users */}
         {showSetupWizard && (
-          <Card className="max-w-2xl mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                Welcome to Fabstir AI Chat!
-              </CardTitle>
-              <CardDescription>
-                First-time user detected. Let's set up your preferences.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="p-8 border-2 border-dashed border-muted-foreground/30 rounded-lg text-center">
-                <p className="text-muted-foreground mb-4">
-                  📋 Setup wizard will be implemented in Sub-Phase 1.3
-                </p>
-                <Button
-                  onClick={() => setShowSetupWizard(false)}
-                  variant="outline"
-                >
-                  Skip for now
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <SetupWizard
+            onComplete={async (wizardSettings) => {
+              try {
+                console.log('[SetupWizard] Saving settings:', wizardSettings);
+
+                // Save settings to S5 using updateSettings (which handles initial save)
+                await updateSettings({
+                  selectedModel: wizardSettings.selectedModel,
+                  theme: wizardSettings.theme,
+                  preferredPaymentToken: wizardSettings.preferredPaymentToken,
+                });
+
+                console.log('[SetupWizard] Settings saved successfully');
+
+                // Close wizard and show chat
+                setShowSetupWizard(false);
+              } catch (error: any) {
+                console.error('[SetupWizard] Failed to save settings:', error);
+                // Still close wizard even on error (graceful degradation)
+                setShowSetupWizard(false);
+              }
+            }}
+            onSkip={() => {
+              console.log('[SetupWizard] User skipped setup');
+              setShowSetupWizard(false);
+            }}
+          />
         )}
 
         {/* Main Chat UI (hidden when setup wizard is shown) */}
