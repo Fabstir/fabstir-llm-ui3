@@ -22,6 +22,7 @@ import { USDCDeposit } from "@/components/usdc-deposit";
 import { useUserSettings } from "@/hooks/use-user-settings";
 import { SetupWizard } from "@/components/setup-wizard";
 import { CompactHeader } from "@/components/compact-header";
+import { AdvancedSettingsPanel } from "@/components/advanced-settings-panel";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -72,6 +73,7 @@ export default function ChatPage() {
     loading: loadingSettings,
     error: settingsError,
     updateSettings,
+    resetSettings,
   } = useUserSettings(effectiveStorageManager);
 
   // First-time user detection
@@ -565,6 +567,41 @@ export default function ChatPage() {
                   onSendMessage={sendMessage}
                   isSending={isSendingMessage}
                   isSessionActive={isSessionActive}
+                />
+
+                {/* Advanced Settings Panel - Collapsible */}
+                <AdvancedSettingsPanel
+                  sessionId={sessionId}
+                  totalTokens={totalTokens}
+                  totalCost={totalCost}
+                  hostAddress={selectedHost?.address}
+                  hostEndpoint={selectedHost?.endpoint}
+                  hostStake={selectedHost?.stake}
+                  onChangeHost={() => {
+                    // Scroll to host selector or open host selector modal
+                    console.log('Change host clicked - will be implemented in Phase 3');
+                  }}
+                  primaryBalance={primaryBalance}
+                  subBalance={balance}
+                  onDeposit={() => setShowDepositModal(true)}
+                  currentModel={currentModelName}
+                  onChangeModel={() => setShowModelSelector(true)}
+                  isExpanded={settings?.advancedSettingsExpanded ?? false}
+                  onExpandedChange={async (expanded) => {
+                    await updateSettings({ advancedSettingsExpanded: expanded });
+                  }}
+                  onResetPreferences={async () => {
+                    if (confirm('Are you sure you want to reset all preferences? This cannot be undone.')) {
+                      try {
+                        await resetSettings();
+                        console.log('Preferences reset successfully');
+                        // Reload to show setup wizard
+                        window.location.reload();
+                      } catch (error) {
+                        console.error('Failed to reset preferences:', error);
+                      }
+                    }
+                  }}
                 />
               </div>
             </PaymentModeTabs>

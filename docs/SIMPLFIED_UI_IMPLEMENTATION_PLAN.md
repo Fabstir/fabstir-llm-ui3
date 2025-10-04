@@ -194,15 +194,15 @@ components/
 - ✅ Responsive on mobile and desktop
 - ✅ Empty state shown when no conversation
 
-### Sub-Phase 2.3: Advanced Settings Panel (Collapsible)
+### Sub-Phase 2.3: Advanced Settings Panel (Collapsible) ✅
 
 **Milestones**:
-- [ ] Collapsible panel component created
-- [ ] Shows session details when expanded
-- [ ] Shows host information when expanded
-- [ ] Shows account balances when expanded
-- [ ] Collapsed state saved to user settings
-- [ ] Smooth expand/collapse animation
+- [x] Collapsible panel component created
+- [x] Shows session details when expanded
+- [x] Shows host information when expanded
+- [x] Shows account balances when expanded
+- [x] Collapsed state saved to user settings
+- [x] Smooth expand/collapse animation
 
 **Implementation Files**:
 ```
