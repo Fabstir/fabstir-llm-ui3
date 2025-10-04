@@ -19,6 +19,7 @@ import { useSessionRecovery, useAutoSaveSession } from "@/hooks/use-session-reco
 import { SessionRecoveryBanner } from "@/components/session-recovery-banner";
 import { SuccessAnimation } from "@/components/brand";
 import { USDCDeposit } from "@/components/usdc-deposit";
+import { useUserSettings } from "@/hooks/use-user-settings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,40 @@ export default function ChatPage() {
   const effectiveSessionManager = baseAccountSdk?.getSessionManager() || sessionManager;
   const effectivePaymentManager = baseAccountSdk?.getPaymentManager() || paymentManager;
   const effectiveStorageManager = baseAccountSdk?.getStorageManager() || storageManager;
+
+  // User Settings (S5 storage integration)
+  const {
+    settings,
+    loading: loadingSettings,
+    error: settingsError,
+    updateSettings,
+  } = useUserSettings(effectiveStorageManager);
+
+  // First-time user detection
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
+
+  // Check if user is first-time (settings === null) after settings load
+  useEffect(() => {
+    if (!loadingSettings) {
+      if (settings === null) {
+        console.log('[First-Time User] No settings found - showing setup wizard');
+        setShowSetupWizard(true);
+      } else {
+        console.log('[Returning User] Settings loaded:', settings);
+        setShowSetupWizard(false);
+
+        // Apply restored settings
+        if (settings.selectedModel) {
+          console.log('[Settings] Restoring model preference:', settings.selectedModel);
+          // TODO: Auto-select model when model selector is implemented
+        }
+        if (settings.theme) {
+          console.log('[Settings] Restoring theme:', settings.theme);
+          // TODO: Apply theme when theme system is implemented
+        }
+      }
+    }
+  }, [settings, loadingSettings]);
 
   const [usdcAddress, setUsdcAddress] = useState<string>("");
 
@@ -177,12 +212,15 @@ export default function ChatPage() {
     }
   };
 
-  if (isInitializing) {
+  // Show loading state for SDK initialization or settings loading
+  if (isInitializing || loadingSettings) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4" />
-          <p className="text-lg font-medium">Initializing Fabstir SDK...</p>
+          <p className="text-lg font-medium">
+            {isInitializing ? "Initializing Fabstir SDK..." : "Loading your preferences..."}
+          </p>
           <p className="text-sm text-muted-foreground mt-1">Please wait...</p>
         </div>
       </div>
@@ -192,16 +230,47 @@ export default function ChatPage() {
   return (
     <ErrorBoundary>
       <main className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-        {/* Page Header */}
-        <div className="text-center space-y-3">
-          <div className="flex items-center justify-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            <h1 className="text-3xl md:text-4xl font-bold">AI Chat</h1>
-          </div>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Connect your wallet, select a host, and start chatting with AI models on the decentralized Fabstir network
-          </p>
-        </div>
+        {/* Setup Wizard for First-Time Users */}
+        {showSetupWizard && (
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                Welcome to Fabstir AI Chat!
+              </CardTitle>
+              <CardDescription>
+                First-time user detected. Let's set up your preferences.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="p-8 border-2 border-dashed border-muted-foreground/30 rounded-lg text-center">
+                <p className="text-muted-foreground mb-4">
+                  📋 Setup wizard will be implemented in Sub-Phase 1.3
+                </p>
+                <Button
+                  onClick={() => setShowSetupWizard(false)}
+                  variant="outline"
+                >
+                  Skip for now
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Main Chat UI (hidden when setup wizard is shown) */}
+        {!showSetupWizard && (
+          <>
+            {/* Page Header */}
+            <div className="text-center space-y-3">
+              <div className="flex items-center justify-center gap-2">
+                <Sparkles className="h-6 w-6 text-primary" />
+                <h1 className="text-3xl md:text-4xl font-bold">AI Chat</h1>
+              </div>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Connect your wallet, select a host, and start chatting with AI models on the decentralized Fabstir network
+              </p>
+            </div>
 
         {/* Session Recovery Banner */}
         {hasRecoverableSession && recoveredSession && (
@@ -477,6 +546,8 @@ export default function ChatPage() {
               </div>
             </PaymentModeTabs>
           </div>
+        )}
+          </>
         )}
       </main>
 
