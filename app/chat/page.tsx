@@ -23,6 +23,7 @@ import { useUserSettings } from "@/hooks/use-user-settings";
 import { SetupWizard } from "@/components/setup-wizard";
 import { CompactHeader } from "@/components/compact-header";
 import { AdvancedSettingsPanel } from "@/components/advanced-settings-panel";
+import { ModelSelector } from "@/components/model-selector";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -619,20 +620,31 @@ export default function ChatPage() {
         />
       )}
 
-      {/* Model Selector Modal - Placeholder for Phase 3 */}
-      <Dialog open={showModelSelector} onOpenChange={setShowModelSelector}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Select AI Model</DialogTitle>
-            <DialogDescription>
-              Model selector will be implemented in Phase 3: Model-First Selection
-            </DialogDescription>
-          </DialogHeader>
-          <div className="p-6 text-center text-muted-foreground">
-            Coming soon in Phase 3...
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Model Selector Modal */}
+      <ModelSelector
+        open={showModelSelector}
+        onOpenChange={setShowModelSelector}
+        currentModel={settings?.selectedModel}
+        recentModels={settings?.lastUsedModels}
+        onSelectModel={async (modelId) => {
+          console.log('[Model Selector] Selected model:', modelId);
+
+          // Update lastUsedModels: add to front, max 5
+          const currentRecent = settings?.lastUsedModels || [];
+          const updatedRecent = [
+            modelId,
+            ...currentRecent.filter(id => id !== modelId)
+          ].slice(0, 5);
+
+          // Save to S5
+          await updateSettings({
+            selectedModel: modelId,
+            lastUsedModels: updatedRecent,
+          });
+
+          console.log('[Model Selector] Settings updated - model saved');
+        }}
+      />
 
       {/* Deposit Modal - Placeholder */}
       <Dialog open={showDepositModal} onOpenChange={setShowDepositModal}>

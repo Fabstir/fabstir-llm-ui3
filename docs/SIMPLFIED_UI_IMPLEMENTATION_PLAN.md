@@ -283,15 +283,15 @@ app/
 
 Implement model selection as the primary user choice, with automatic compatible host selection.
 
-### Sub-Phase 3.1: Model Selector Component
+### Sub-Phase 3.1: Model Selector Component ✅
 
 **Milestones**:
-- [ ] Model grid/list component created
-- [ ] Shows all available models with metadata
-- [ ] Displays pricing, speed, quality info
-- [ ] Recently used models highlighted
-- [ ] Auto-saves selection to S5
-- [ ] Updates recent models list
+- [x] Model grid/list component created
+- [x] Shows all available models with metadata
+- [x] Displays pricing, speed, quality info
+- [x] Recently used models highlighted
+- [x] Auto-saves selection to S5
+- [x] Updates recent models list
 
 **Implementation Files**:
 ```
