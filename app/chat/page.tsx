@@ -21,6 +21,8 @@ import { SuccessAnimation } from "@/components/brand";
 import { USDCDeposit } from "@/components/usdc-deposit";
 import { useUserSettings } from "@/hooks/use-user-settings";
 import { SetupWizard } from "@/components/setup-wizard";
+import { CompactHeader } from "@/components/compact-header";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,6 +76,10 @@ export default function ChatPage() {
 
   // First-time user detection
   const [showSetupWizard, setShowSetupWizard] = useState(false);
+
+  // Header modal states
+  const [showModelSelector, setShowModelSelector] = useState(false);
+  const [showDepositModal, setShowDepositModal] = useState(false);
 
   // Check if user is first-time (settings === null) after settings load
   useEffect(() => {
@@ -135,11 +141,14 @@ export default function ChatPage() {
   );
 
   // Check if user has sufficient balance to start a session
-  const { hasEnough, balance, checkingAddress, isLoading: isCheckingBalance } = useHasSufficientBalance(
+  const { hasEnough, balance, primaryBalance, checkingAddress, isLoading: isCheckingBalance } = useHasSufficientBalance(
     accountInfo,
     userAddress,
     2.0 // $2 USDC minimum for session
   );
+
+  // Derive model name for header
+  const currentModelName = settings?.selectedModel || selectedHost?.models[0] || 'No model selected';
 
   // Keyboard shortcuts
   useGlobalKeyboardShortcuts(
@@ -230,6 +239,16 @@ export default function ChatPage() {
 
   return (
     <ErrorBoundary>
+      {/* Compact Header - shown when authenticated or using Base Account */}
+      {(isAuthenticated || accountInfo) && !showSetupWizard && (
+        <CompactHeader
+          modelName={currentModelName}
+          primaryBalance={primaryBalance}
+          onModelClick={() => setShowModelSelector(true)}
+          onBalanceClick={() => setShowDepositModal(true)}
+        />
+      )}
+
       <main className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Setup Wizard for First-Time Users */}
         {showSetupWizard && (
@@ -562,6 +581,44 @@ export default function ChatPage() {
           duration={2000}
         />
       )}
+
+      {/* Model Selector Modal - Placeholder for Phase 3 */}
+      <Dialog open={showModelSelector} onOpenChange={setShowModelSelector}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Select AI Model</DialogTitle>
+            <DialogDescription>
+              Model selector will be implemented in Phase 3: Model-First Selection
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-6 text-center text-muted-foreground">
+            Coming soon in Phase 3...
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deposit Modal - Placeholder */}
+      <Dialog open={showDepositModal} onOpenChange={setShowDepositModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Deposit USDC</DialogTitle>
+            <DialogDescription>
+              Add funds to your PRIMARY account
+            </DialogDescription>
+          </DialogHeader>
+          {accountInfo?.primaryAccount && (
+            <USDCDeposit
+              primaryAccount={accountInfo.primaryAccount}
+              subAccount={accountInfo.subAccount}
+              usdcAddress={process.env.NEXT_PUBLIC_CONTRACT_USDC_TOKEN!}
+              onDepositComplete={async () => {
+                console.log("Deposit complete, refreshing balances...");
+                setShowDepositModal(false);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </ErrorBoundary>
   );
 }

@@ -130,14 +130,14 @@ components/
 
 Restructure the chat page to be conversation-first, with a minimal header, expanded chat area, and collapsible advanced settings.
 
-### Sub-Phase 2.1: Compact Header
+### Sub-Phase 2.1: Compact Header ✅
 
 **Milestones**:
-- [ ] Minimal top bar with essential info only
-- [ ] Model name displayed (clickable to change)
-- [ ] PRIMARY balance shown (clickable to deposit)
-- [ ] Logo/branding on left
-- [ ] Clean, single-line design
+- [x] Minimal top bar with essential info only
+- [x] Model name displayed (clickable to change)
+- [x] PRIMARY balance shown (clickable to deposit)
+- [x] Logo/branding on left
+- [x] Clean, single-line design
 
 **Implementation Files**:
 ```
