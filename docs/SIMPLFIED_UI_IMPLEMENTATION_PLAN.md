@@ -884,32 +884,39 @@ docs/
   * Advanced topics (proof system, popup-free, blockchain)
   * Getting help (support channels, bug reporting)
 
-### Sub-Phase 6.2: Developer Notes
+### Sub-Phase 6.2: Developer Notes ✅
 
 **Milestones**:
-- [ ] Code comments added to complex sections
-- [ ] Architecture overview documented
-- [ ] Settings schema documented
-- [ ] Known limitations listed
-- [ ] Future enhancements outlined
+- [x] Code comments added to complex sections
+- [x] Architecture overview documented
+- [x] Settings schema documented
+- [x] Known limitations listed
+- [x] Future enhancements outlined
 
 **Implementation Files**:
 ```
 docs/
-└── DEVELOPER_NOTES.md             # Technical documentation
+└── DEVELOPER_NOTES.md             # Technical documentation (created)
 ```
 
 **Key Tasks**:
-1. Document settings schema and fields
-2. Explain S5 caching strategy (5-minute TTL)
-3. Document smart host selection algorithm
-4. List known limitations:
+1. ✅ Document settings schema and fields
+2. ✅ Explain S5 caching strategy (5-minute TTL)
+3. ✅ Document smart host selection algorithm
+4. ✅ List known limitations:
    - 5-minute sync delay for cross-device
    - Requires S5 portal availability
-5. Outline future enhancements:
+   - Last-write-wins conflict resolution
+   - No real-time sync
+   - localStorage size limits
+   - Browser compatibility
+5. ✅ Outline future enhancements:
    - Real-time sync (WebSocket)
    - Host favorites system
    - Model performance ratings
+   - Session history storage
+   - Settings import/export
+   - Advanced host selection (stake-weighted)
 
 **Success Criteria**:
 - ✅ Architecture clearly explained
@@ -917,6 +924,17 @@ docs/
 - ✅ Caching behavior explained
 - ✅ Limitations acknowledged
 - ✅ Future roadmap outlined
+
+**Implementation Complete**: Comprehensive technical documentation created with:
+- **Architecture Overview** - Simplified UX redesign pattern, component hierarchy, SDK integration
+- **Settings Schema** - UserSettings type, partial updates, first-time user detection
+- **Dual-Layer Caching** - SDK in-memory (5-min TTL) + localStorage fallback
+- **Smart Host Selection** - Algorithm steps: discover → filter → random selection
+- **Offline Support** - Network detection, sync queue, error classification
+- **Known Limitations** - 6 documented limitations with impact analysis
+- **Future Enhancements** - 6 priority-ranked improvements with implementation details
+- **Code Patterns** - Optimistic UI, error handling, React Query, analytics, TypeScript
+- **Debugging Tips** - Console commands, common issues, troubleshooting guide
 
 ### Sub-Phase 6.3: Code Cleanup & Optimization
 
