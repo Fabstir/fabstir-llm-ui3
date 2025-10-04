@@ -666,34 +666,39 @@ app/
 - **Error handling** - Toast notification on reset failure
 - **Clean UI** - Card layout with proper spacing, muted-foreground text, and badges for visual hierarchy
 
-### Sub-Phase 5.3: Loading & Empty States
+### Sub-Phase 5.3: Loading & Empty States ✅
 
 **Milestones**:
-- [ ] Loading spinner for settings fetch
-- [ ] Skeleton screens for chat
-- [ ] Empty state for no messages
-- [ ] Empty state for no models
-- [ ] Error states with retry options
-- [ ] Consistent loading UX
+- [x] Loading spinner for settings fetch
+- [x] Skeleton screens for chat
+- [x] Empty state for no messages
+- [x] Empty state for no models
+- [x] Error states with retry options
+- [x] Consistent loading UX
 
 **Implementation Files**:
 ```
 components/
-├── loading-states.tsx             # Centralized loading components
-└── empty-states.tsx               # Centralized empty state components
+├── loading-states.tsx             # Centralized loading components (created)
+├── empty-states.tsx               # Centralized empty state components (created)
+└── brand/
+    └── empty-state.tsx            # Existing chat empty states (reused)
+app/
+└── chat/page.tsx                  # Updated (use PageLoading and SettingsErrorState)
 ```
 
 **Key Tasks**:
-1. Create loading spinner component (use Loader2 from lucide-react)
-2. Create skeleton screens for:
+1. ✅ Create loading spinner component (use Loader2 from lucide-react)
+2. ✅ Create skeleton screens for:
    - Chat messages (gray bars)
    - Model selector (card skeletons)
-3. Create empty states:
-   - No messages: "Send your first message to start chatting"
+   - Settings (grid layout)
+3. ✅ Create empty states:
+   - No messages: "Send your first message to start chatting" (existing in brand/empty-state.tsx)
    - No models: "No models available. Try refreshing."
    - Settings error: "Unable to load settings. Using defaults."
-4. Add retry buttons where appropriate
-5. Use consistent styling (match Fabstir brand)
+4. ✅ Add retry buttons where appropriate
+5. ✅ Use consistent styling (match Fabstir brand)
 
 **Success Criteria**:
 - ✅ Loading shown while fetching settings
@@ -702,6 +707,18 @@ components/
 - ✅ Retry options work
 - ✅ Consistent visual design
 - ✅ No jarring layout shifts
+
+**Implementation Complete**: Comprehensive loading and empty state system created:
+- **LoadingSpinner component** - Reusable spinner with 3 sizes (sm/md/lg), optional message/submessage
+- **PageLoading component** - Full-page loading state with centered spinner
+- **ChatMessageSkeleton** - Animated skeleton for chat messages (user + AI pairs)
+- **ModelCardSkeleton** - Animated skeleton for model selector cards
+- **SettingsSkeleton** - Animated skeleton for settings grid
+- **ErrorState component** - Generic error state with 4 variants (error/warning/offline/settings)
+- **NoModelsState** - Empty state for no models with refresh button
+- **SettingsErrorState** - Settings-specific error with retry + use defaults options
+- **Chat page integration** - Uses PageLoading for SDK/settings init, SettingsErrorState for settings errors with retry/defaults
+- **Existing empty states** - Leveraged brand/empty-state.tsx for chat messages (already implemented)
 
 ### Sub-Phase 5.4: Analytics Integration
 

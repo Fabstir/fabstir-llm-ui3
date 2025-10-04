@@ -25,6 +25,8 @@ import { CompactHeader } from "@/components/compact-header";
 import { AdvancedSettingsPanel } from "@/components/advanced-settings-panel";
 import { ModelSelector } from "@/components/model-selector";
 import { OfflineBanner } from "@/components/offline-banner";
+import { PageLoading } from "@/components/loading-states";
+import { SettingsErrorState } from "@/components/empty-states";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -331,15 +333,24 @@ export default function ChatPage() {
   // Show loading state for SDK initialization or settings loading
   if (isInitializing || loadingSettings) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4" />
-          <p className="text-lg font-medium">
-            {isInitializing ? "Initializing Fabstir SDK..." : "Loading your preferences..."}
-          </p>
-          <p className="text-sm text-muted-foreground mt-1">Please wait...</p>
-        </div>
-      </div>
+      <PageLoading
+        message={isInitializing ? "Initializing Fabstir SDK..." : "Loading your preferences..."}
+        submessage="Please wait..."
+      />
+    );
+  }
+
+  // Show error state for settings with retry option
+  if (settingsError && !loadingSettings) {
+    return (
+      <SettingsErrorState
+        error={settingsError}
+        onRetry={() => window.location.reload()}
+        onUseDefaults={() => {
+          // Continue with null settings (first-time user flow)
+          setShowSetupWizard(true);
+        }}
+      />
     );
   }
 
