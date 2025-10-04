@@ -24,6 +24,57 @@ const PRICE_PER_TOKEN = 2000;
 const PROOF_INTERVAL = 100;
 const SESSION_DURATION = 86400;
 
+/**
+ * Verify endpoint serves the expected host address
+ * Attempts to query endpoint for its host information
+ *
+ * REQUIREMENT: Production nodes must expose a /health endpoint that returns:
+ * {
+ *   "hostAddress": "0x...",  // or "host_address" or "address"
+ *   // ... other health info
+ * }
+ *
+ * This prevents creating jobs for the wrong host, which causes:
+ * - Proof submission failures ("Only host can submit proof")
+ * - 100% refund to user (host and treasury get nothing)
+ */
+async function verifyEndpointHost(
+  endpoint: string,
+  expectedHostAddress: string
+): Promise<{ verified: boolean; actualHost?: string; error?: string }> {
+  try {
+    // Convert ws:// to http:// or wss:// to https://
+    const httpEndpoint = endpoint.replace(/^ws/, "http");
+
+    // Try to fetch host info from endpoint
+    // Note: This requires the node to expose /health or /info endpoint
+    const response = await fetch(`${httpEndpoint}/health`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(5000), // 5 second timeout
+    });
+
+    if (!response.ok) {
+      return { verified: false, error: `HTTP ${response.status}` };
+    }
+
+    const data = await response.json();
+    const actualHost = data.hostAddress || data.host_address || data.address;
+
+    if (!actualHost) {
+      return { verified: false, error: "No host address in response" };
+    }
+
+    const verified =
+      actualHost.toLowerCase() === expectedHostAddress.toLowerCase();
+
+    return { verified, actualHost };
+  } catch (error: any) {
+    console.warn("⚠️  Could not verify endpoint host:", error.message);
+    return { verified: false, error: error.message };
+  }
+}
+
 interface SessionConfig {
   depositAmount: string;
   pricePerToken: number;
@@ -135,13 +186,43 @@ export function useChatSession(
         chainId: 84532, // Base Sepolia
       };
 
-      console.log("🚀 Starting session with config:", {
-        ...config,
-        model: config.model.slice(0, 20) + '...',
-      });
+      console.log("🚀 Starting session with host:");
+      console.log(`  Host Address: ${selectedHost.address}`);
+      console.log(`  Endpoint: ${selectedHost.endpoint}`);
+      console.log(`  Model: ${config.model}`);
+      console.log(`  Deposit: $${SESSION_DEPOSIT} USDC`);
+
+      // Pre-flight verification: Check if endpoint serves the expected host
+      console.log("\n🔍 Verifying endpoint host address...");
+      const verification = await verifyEndpointHost(
+        selectedHost.endpoint,
+        selectedHost.address
+      );
+
+      if (verification.verified) {
+        console.log("✅ Endpoint verification PASSED");
+        console.log(`   Endpoint serves host: ${verification.actualHost}`);
+      } else {
+        console.warn("⚠️  Endpoint verification FAILED");
+        if (verification.actualHost) {
+          console.error("🚨 HOST MISMATCH DETECTED!");
+          console.error(`   Expected: ${selectedHost.address}`);
+          console.error(`   Actual:   ${verification.actualHost}`);
+          console.error("   ❌ This will cause proof submission to fail!");
+          console.error("   ❌ Host and treasury will not be paid!");
+          throw new Error(
+            `Host mismatch: Endpoint serves ${verification.actualHost} but job will be created for ${selectedHost.address}. This will cause 100% refund!`
+          );
+        } else {
+          console.warn(`   Could not verify: ${verification.error}`);
+          console.warn("   Proceeding anyway, but proof submission may fail if host mismatch exists.");
+        }
+      }
 
       const result = await sessionManager.startSession(config);
-      console.log("✅ Session started successfully:", result);
+      console.log("✅ Session created successfully:");
+      console.log(`  Session ID: ${result.sessionId}`);
+      console.log(`  Job ID: ${result.jobId}`);
       return result;
     },
     onSuccess: (result) => {
@@ -176,6 +257,7 @@ export function useChatSession(
       });
 
       let errorMessage = error.message;
+      let errorTitle = "Session Creation Failed";
 
       // Extract revert reason if available
       if (error.reason) {
@@ -184,10 +266,30 @@ export function useChatSession(
         errorMessage = error.data.message;
       }
 
+      // Detect spend permission depletion (400 Bad Request from Base Account Kit)
+      const isSpendPermissionError =
+        error.message?.toLowerCase().includes("spend permission") ||
+        error.message?.toLowerCase().includes("allowance") ||
+        error.message?.toLowerCase().includes("insufficient") ||
+        (error.code === 400 && userAddress); // 400 from Base Account usually means permission issue
+
+      if (isSpendPermissionError) {
+        errorTitle = "Spend Permission Depleted";
+        errorMessage =
+          "Your sub-account's spend permission allowance has been used up. " +
+          "Please disconnect Base Account from your wallet settings and reconnect to create a fresh sub-account with renewed allowance.";
+
+        console.error("🚨 SPEND PERMISSION DEPLETED");
+        console.error("   This sub-account was created with old allowance ($3 USDC)");
+        console.error("   New sub-accounts get $100 USDC allowance");
+        console.error("   → Disconnect Base Account and reconnect to fix");
+      }
+
       toast({
-        title: "Session Creation Failed",
+        title: errorTitle,
         description: errorMessage,
         variant: "destructive",
+        duration: 10000, // Show longer for spend permission errors
       });
     },
   });

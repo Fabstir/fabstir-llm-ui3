@@ -120,15 +120,22 @@ export async function hasSpendPermission(
 
 /**
  * Calculate default allowance for USDC spend permissions
+ *
+ * Allows multiple sessions without re-approval since PRIMARY account
+ * holds the actual funds and controls the total available balance.
  */
 export function calculateDefaultAllowance(depositAmount: string): bigint {
-  // Convert deposit amount to USDC (6 decimals)
-  const amount = BigInt(Math.floor(parseFloat(depositAmount) * 1_000_000));
+  // Convert single session deposit amount to USDC (6 decimals)
+  const singleSessionAmount = BigInt(Math.floor(parseFloat(depositAmount) * 1_000_000));
 
-  // Add 50% buffer for fees and future sessions
-  const buffer = amount / 2n;
+  // Allow for 50 sessions worth of spending (e.g., $2 × 50 = $100 USDC)
+  // This is safe because:
+  // - PRIMARY account acts as the bank and holds the actual funds
+  // - User only needs to approve spend permission once
+  // - Avoids "insufficient spend permission" errors after a few sessions
+  const sessionMultiplier = 50n;
 
-  return amount + buffer;
+  return singleSessionAmount * sessionMultiplier;
 }
 
 /**

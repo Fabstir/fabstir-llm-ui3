@@ -77,15 +77,19 @@ export function HostSelector({
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mb-1">
                     <Server className="w-5 h-5" />
-                    <code className="text-sm font-mono">
-                      {host.address.slice(0, 10)}...{host.address.slice(-8)}
-                    </code>
+                    <span className="text-xs font-semibold text-muted-foreground">Host Address:</span>
                   </div>
-                  <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                    <ExternalLink className="w-4 h-4" />
-                    {host.endpoint}
+                  <code className="text-sm font-mono block mb-3">
+                    {host.address}
+                  </code>
+                  <div className="flex items-start gap-2 text-sm">
+                    <ExternalLink className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <span className="text-xs font-semibold text-muted-foreground block mb-1">Endpoint:</span>
+                      <code className="text-xs font-mono text-foreground break-all">{host.endpoint}</code>
+                    </div>
                   </div>
                 </div>
                 {selectedHost?.address === host.address && (

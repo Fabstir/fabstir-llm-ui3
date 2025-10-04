@@ -77,6 +77,16 @@ export function useHosts(hostManager: HostManager | null) {
 
       const parsedHosts = await Promise.all(parsedHostsPromises);
 
+      // Log discovered hosts for debugging endpoint/address matching
+      console.log("🔍 Discovered Hosts:");
+      parsedHosts.forEach((host, idx) => {
+        console.log(`  Host ${idx + 1}:`);
+        console.log(`    Address: ${host.address}`);
+        console.log(`    Endpoint: ${host.endpoint}`);
+        console.log(`    Models: ${host.models.join(", ")}`);
+        console.log(`    Stake: ${(Number(host.stake) / 1e18).toFixed(2)} FAB`);
+      });
+
       return parsedHosts;
     },
     enabled: false, // Manual trigger only via refetchHosts()
