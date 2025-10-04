@@ -29,8 +29,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw, Sparkles, Zap, Wallet } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ChatPage() {
+  const { toast } = useToast();
+
   const {
     sdk,
     isInitializing,
@@ -83,6 +86,7 @@ export default function ChatPage() {
   // Header modal states
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
+  const [isSelectingHost, setIsSelectingHost] = useState(false);
 
   // Check if user is first-time (settings === null) after settings load
   useEffect(() => {
@@ -115,6 +119,7 @@ export default function ChatPage() {
     setSelectedHost,
     isDiscoveringHosts,
     discoverHosts,
+    selectHostForModel,
   } = useHosts(effectiveHostManager);
 
   const {
@@ -627,22 +632,61 @@ export default function ChatPage() {
         currentModel={settings?.selectedModel}
         recentModels={settings?.lastUsedModels}
         onSelectModel={async (modelId) => {
-          console.log('[Model Selector] Selected model:', modelId);
+          try {
+            setIsSelectingHost(true);
+            console.log('[Model Selector] Selected model:', modelId);
 
-          // Update lastUsedModels: add to front, max 5
-          const currentRecent = settings?.lastUsedModels || [];
-          const updatedRecent = [
-            modelId,
-            ...currentRecent.filter(id => id !== modelId)
-          ].slice(0, 5);
+            // Show loading toast
+            toast({
+              title: "Finding compatible host...",
+              description: `Searching for hosts that support ${modelId}`,
+            });
 
-          // Save to S5
-          await updateSettings({
-            selectedModel: modelId,
-            lastUsedModels: updatedRecent,
-          });
+            // Smart host selection
+            const host = await selectHostForModel(modelId);
 
-          console.log('[Model Selector] Settings updated - model saved');
+            if (!host) {
+              // No compatible hosts found
+              toast({
+                title: "No compatible hosts",
+                description: "No hosts found for this model. Try a different model or discover more hosts.",
+                variant: "destructive",
+              });
+              return;
+            }
+
+            // Update lastUsedModels: add to front, max 5
+            const currentRecent = settings?.lastUsedModels || [];
+            const updatedRecent = [
+              modelId,
+              ...currentRecent.filter(id => id !== modelId)
+            ].slice(0, 5);
+
+            // Save to S5 (model + host address)
+            await updateSettings({
+              selectedModel: modelId,
+              lastUsedModels: updatedRecent,
+              lastHostAddress: host.address,
+            });
+
+            console.log('[Model Selector] Settings updated - model and host saved');
+
+            // Show success toast
+            toast({
+              title: "Host connected",
+              description: `Connected to ${host.address.slice(0, 8)}... with ${host.models.length} model(s)`,
+            });
+
+          } catch (error: any) {
+            console.error('[Model Selector] Error selecting host:', error);
+            toast({
+              title: "Host selection failed",
+              description: error.message || "Failed to select compatible host",
+              variant: "destructive",
+            });
+          } finally {
+            setIsSelectingHost(false);
+          }
         }}
       />
 

@@ -103,12 +103,51 @@ export function useHosts(hostManager: HostManager | null) {
     }
   };
 
+  // Smart host selection based on model
+  const selectHostForModel = async (modelId: string): Promise<ParsedHost | null> => {
+    console.log(`[Smart Host Selection] Finding host for model: ${modelId}`);
+
+    // Discover hosts if not already discovered
+    const hosts = availableHosts?.length > 0 ? availableHosts : (await refetchHosts()).data || [];
+
+    if (hosts.length === 0) {
+      console.error("[Smart Host Selection] No hosts discovered");
+      return null;
+    }
+
+    // Filter hosts that support the selected model
+    const compatibleHosts = hosts.filter(host =>
+      host.models.some(model => model.includes(modelId) || modelId.includes(model))
+    );
+
+    console.log(`[Smart Host Selection] Found ${compatibleHosts.length} compatible hosts out of ${hosts.length}`);
+
+    if (compatibleHosts.length === 0) {
+      console.error(`[Smart Host Selection] No hosts support model: ${modelId}`);
+      return null;
+    }
+
+    // Randomly select from compatible hosts
+    const randomIndex = Math.floor(Math.random() * compatibleHosts.length);
+    const selected = compatibleHosts[randomIndex];
+
+    console.log(`[Smart Host Selection] Selected host ${randomIndex + 1} of ${compatibleHosts.length}:`, {
+      address: selected.address,
+      endpoint: selected.endpoint,
+      models: selected.models,
+    });
+
+    setSelectedHost(selected);
+    return selected;
+  };
+
   return {
     availableHosts: availableHosts || [],
     selectedHost,
     setSelectedHost,
     isDiscoveringHosts,
     discoverHosts: handleDiscoverHosts,
+    selectHostForModel,
     refetchHosts,
     error,
   };

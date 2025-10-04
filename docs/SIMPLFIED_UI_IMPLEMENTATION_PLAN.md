@@ -329,15 +329,15 @@ components/
 - ✅ Modal closes after selection
 - ✅ Model name updates in header
 
-### Sub-Phase 3.2: Smart Host Selection
+### Sub-Phase 3.2: Smart Host Selection ✅
 
 **Milestones**:
-- [ ] Automatic host discovery when model selected
-- [ ] Filters hosts supporting selected model
-- [ ] Randomly picks from compatible hosts
-- [ ] Saves last used host to settings
-- [ ] Shows loading state during discovery
-- [ ] Error handling if no hosts support model
+- [x] Automatic host discovery when model selected
+- [x] Filters hosts supporting selected model
+- [x] Randomly picks from compatible hosts
+- [x] Saves last used host to settings
+- [x] Shows loading state during discovery
+- [x] Error handling if no hosts support model
 
 **Implementation Files**:
 ```
