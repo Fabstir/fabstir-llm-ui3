@@ -24,6 +24,7 @@ import { SetupWizard } from "@/components/setup-wizard";
 import { CompactHeader } from "@/components/compact-header";
 import { AdvancedSettingsPanel } from "@/components/advanced-settings-panel";
 import { ModelSelector } from "@/components/model-selector";
+import { OfflineBanner } from "@/components/offline-banner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -76,6 +77,7 @@ export default function ChatPage() {
     settings,
     loading: loadingSettings,
     error: settingsError,
+    isOnline,
     updateSettings,
     resetSettings,
   } = useUserSettings(effectiveStorageManager);
@@ -306,6 +308,21 @@ export default function ChatPage() {
           onModelClick={() => setShowModelSelector(true)}
           onBalanceClick={() => setShowDepositModal(true)}
         />
+      )}
+
+      {/* Offline Banner - shown when network connection lost */}
+      {!isOnline && (isAuthenticated || accountInfo) && (
+        <div className="sticky top-14 z-40 px-4 py-2 bg-background/95 backdrop-blur">
+          <div className="container mx-auto max-w-6xl">
+            <OfflineBanner
+              pendingUpdates={0} // TODO: Get actual count from sync queue
+              onRetry={() => {
+                // Trigger manual refresh
+                window.location.reload();
+              }}
+            />
+          </div>
+        </div>
       )}
 
       <main className="container mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
