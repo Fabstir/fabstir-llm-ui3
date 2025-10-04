@@ -162,14 +162,14 @@ components/
 - ✅ Clicking balance opens deposit UI
 - ✅ Clean, minimal design (not cluttered)
 
-### Sub-Phase 2.2: Expand Chat Interface
+### Sub-Phase 2.2: Expand Chat Interface ✅
 
 **Milestones**:
-- [ ] Chat conversation takes 60-70% of screen height
-- [ ] User input box always visible at bottom
-- [ ] Auto-scroll to latest message
-- [ ] Message animations working
-- [ ] Empty state shown when no messages
+- [x] Chat conversation takes 60-70% of screen height
+- [x] User input box always visible at bottom
+- [x] Auto-scroll to latest message
+- [x] Message animations working
+- [x] Empty state shown when no messages
 
 **Implementation Files**:
 ```

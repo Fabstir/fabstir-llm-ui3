@@ -50,18 +50,23 @@ export function ChatInterface({
   };
 
   return (
-    <Card className="flex flex-col h-[calc(100vh-200px)] max-w-4xl mx-auto">
+    <Card className="flex flex-col h-[70vh] md:h-[65vh] lg:h-[70vh] w-full">
       {/* Messages Area */}
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 p-4 md:p-6">
         <AnimatePresence initial={false}>
           {messages.length === 0 && (
             <motion.div
               key="empty-state"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-center min-h-[400px]"
+              className="flex flex-col items-center justify-center h-full min-h-[300px] text-center"
             >
               <ChatEmptyState />
+              <p className="mt-4 text-sm text-muted-foreground max-w-md">
+                {!isSessionActive
+                  ? "Start a session to begin chatting with AI"
+                  : "Send your first message to start the conversation"}
+              </p>
             </motion.div>
           )}
 
@@ -73,7 +78,7 @@ export function ChatInterface({
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
               className={cn(
-                "flex gap-3 mb-4",
+                "flex gap-3 mb-3",
                 message.role === "user" && "flex-row-reverse"
               )}
             >
@@ -96,10 +101,10 @@ export function ChatInterface({
 
               <div
                 className={cn(
-                  "flex-1 rounded-lg p-4",
+                  "flex-1 rounded-lg p-3 md:p-4",
                   message.role === "user" &&
-                    "bg-primary text-primary-foreground ml-12",
-                  message.role === "assistant" && "bg-muted mr-12",
+                    "bg-primary text-primary-foreground ml-8 md:ml-12",
+                  message.role === "assistant" && "bg-muted mr-8 md:mr-12",
                   message.role === "system" && "bg-accent/50 text-center"
                 )}
               >
@@ -124,14 +129,14 @@ export function ChatInterface({
               key="loading-indicator"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex gap-3 mb-4"
+              className="flex gap-3 mb-3"
             >
               <Avatar className="w-8 h-8 bg-secondary">
                 <AvatarFallback>
                   <Bot className="w-4 h-4" />
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 rounded-lg p-4 bg-muted mr-12">
+              <div className="flex-1 rounded-lg p-3 md:p-4 bg-muted mr-8 md:mr-12">
                 <ThinkingAnimation />
               </div>
             </motion.div>
@@ -140,8 +145,8 @@ export function ChatInterface({
         <div ref={messagesEndRef} />
       </ScrollArea>
 
-      {/* Input Area */}
-      <div className="border-t p-4">
+      {/* Input Area - Always Visible at Bottom */}
+      <div className="border-t p-3 md:p-4 bg-background">
         <form onSubmit={handleSubmit} className="flex gap-2">
           <Textarea
             value={input}
@@ -153,14 +158,14 @@ export function ChatInterface({
                 : "Type your message... (Enter to send, Shift+Enter for new line)"
             }
             disabled={!isSessionActive || isSending}
-            rows={3}
-            className="resize-none"
+            rows={2}
+            className="resize-none min-h-[60px]"
           />
           <Button
             type="submit"
             disabled={!isSessionActive || !input.trim() || isSending}
             size="lg"
-            className="h-auto transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-lg hover:shadow-primary/50"
+            className="h-auto px-4 transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-lg hover:shadow-primary/50"
           >
             {isSending ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -171,7 +176,7 @@ export function ChatInterface({
         </form>
 
         {!isSessionActive && (
-          <p className="mt-2 text-sm text-muted-foreground text-center">
+          <p className="mt-2 text-xs md:text-sm text-muted-foreground text-center">
             Please start a session to begin chatting
           </p>
         )}
