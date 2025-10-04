@@ -46,10 +46,10 @@ export function SessionControls({
             <p className="mt-1">
               {insufficientBalance.isUsingBaseAccount ? (
                 <>
-                  Combined balance: {insufficientBalance.balance} USDC (need $2.00 USDC)
+                  Your balance: {insufficientBalance.balance} USDC (need $2.00 USDC)
                   <br />
                   <span className="text-xs">
-                    💡 Deposit USDC to PRIMARY account ({insufficientBalance.address?.slice(0, 6)}...{insufficientBalance.address?.slice(-4)}) using the card above
+                    💡 Deposit USDC to your account to start chatting
                   </span>
                 </>
               ) : (

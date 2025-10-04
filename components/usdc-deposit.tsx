@@ -197,11 +197,10 @@ export function USDCDeposit({ primaryAccount, subAccount, usdcAddress, onDeposit
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <DollarSign className="h-5 w-5" />
-          Deposit USDC to Base Smart Wallet
+          Deposit USDC to Your Account
         </CardTitle>
         <CardDescription>
-          Transfer USDC from your EOA wallet to the Base PRIMARY account (smart wallet).
-          The SUB-account will then use it via spend permissions for popup-free sessions.
+          Transfer USDC from your connected wallet to your Base Account for popup-free AI sessions.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -229,17 +228,17 @@ export function USDCDeposit({ primaryAccount, subAccount, usdcAddress, onDeposit
               </div>
             </div>
             <div className="text-xs text-yellow-600/70 p-3 bg-yellow-500/5 rounded border border-yellow-500/20">
-              💡 <strong>Why two wallets?</strong> Base Account enables popup-free transactions, but you need a regular wallet to initially fund it with USDC.
+              💡 <strong>Tip:</strong> Base Account enables popup-free transactions. Connect your wallet to fund it with USDC.
             </div>
           </div>
         )}
         {/* Balance Display */}
         <div className="space-y-3">
-          {/* EOA Balance */}
+          {/* Connected Wallet Balance */}
           <div className="p-3 bg-muted rounded-lg">
             <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
               <Wallet className="h-3 w-3" />
-              EOA Balance (MetaMask/Rainbow)
+              Connected Wallet (Source)
             </div>
             <div className="font-mono text-lg">
               {eoaBalance !== null ? `${eoaBalance} USDC` : "Loading..."}
@@ -251,51 +250,21 @@ export function USDCDeposit({ primaryAccount, subAccount, usdcAddress, onDeposit
             )}
           </div>
 
-          {/* Base Account Balances */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Primary Account */}
-            <div className="p-3 bg-primary/10 rounded-lg border-2 border-primary/30">
-              <div className="text-xs text-primary mb-1 font-semibold">
-                PRIMARY Account (Bank)
-              </div>
-              <div className="font-mono text-lg">
-                {primaryBalance !== null ? `${primaryBalance} USDC` : "Loading..."}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {primaryAccount.slice(0, 6)}...{primaryAccount.slice(-4)}
-              </div>
-              <div className="text-xs text-green-600 mt-1 font-semibold">
-                💰 Deposit here ←
-              </div>
+          {/* Base Account Balance */}
+          <div className="p-4 bg-primary/10 rounded-lg border-2 border-primary/30">
+            <div className="text-xs text-primary mb-1 font-semibold">
+              Base Account Balance
             </div>
-
-            {/* Sub Account */}
-            {subAccount && (
-              <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
-                <div className="text-xs text-blue-600 mb-1 font-semibold">
-                  SUB Account (Spender)
-                </div>
-                <div className="font-mono text-lg">
-                  {subBalance !== null ? `${subBalance} USDC` : "Loading..."}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {subAccount.slice(0, 6)}...{subAccount.slice(-4)}
-                </div>
-                <div className="text-xs text-blue-600 mt-1">
-                  📤 Sends transactions
-                </div>
-              </div>
-            )}
+            <div className="font-mono text-2xl">
+              {primaryBalance !== null ? `${primaryBalance} USDC` : "Loading..."}
+            </div>
+            <div className="text-xs text-muted-foreground mt-2">
+              {primaryAccount.slice(0, 6)}...{primaryAccount.slice(-4)}
+            </div>
+            <div className="text-xs text-green-600 mt-2 font-semibold">
+              💰 Deposit USDC here to start chatting
+            </div>
           </div>
-
-          {/* Total Balance */}
-          {subAccount && (
-            <div className="p-2 bg-green-500/10 rounded text-center">
-              <div className="text-xs text-green-600 font-semibold">
-                Combined Balance (SUB + PRIMARY): {((parseFloat(subBalance || "0") + parseFloat(primaryBalance || "0"))).toFixed(2)} USDC
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Deposit Controls */}

@@ -405,7 +405,7 @@ export default function ChatPage() {
               </div>
 
               <p className="text-xs text-center text-muted-foreground">
-                💡 <strong>Both wallets needed:</strong> Base Account for popup-free transactions, regular wallet to initially fund it
+                💡 <strong>Quick Setup:</strong> Connect Base Account for popup-free sessions, then fund it with your wallet
               </p>
             </CardContent>
           </Card>

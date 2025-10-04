@@ -124,7 +124,7 @@ components/
 
 ---
 
-## Phase 2: Simplified Chat Layout
+## Phase 2: Simplified Chat Layout ✅
 
 ### Overview
 
@@ -235,14 +235,14 @@ components/
 - ✅ Easy to collapse again
 - ✅ Doesn't interfere with chat input
 
-### Sub-Phase 2.4: Hide Complexity (SUB Account)
+### Sub-Phase 2.4: Hide Complexity (SUB Account) ✅
 
 **Milestones**:
-- [ ] SUB account address removed from UI
-- [ ] Only PRIMARY balance shown
-- [ ] Spend permission details hidden
-- [ ] Base Account connection simplified
-- [ ] User sees only essential info
+- [x] SUB account address removed from UI
+- [x] Only PRIMARY balance shown
+- [x] Spend permission details hidden
+- [x] Base Account connection simplified
+- [x] User sees only essential info
 
 **Implementation Files**:
 ```
