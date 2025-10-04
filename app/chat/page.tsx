@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { WalletConnectButton } from "@/components/wallet-connect-button";
 import { HostSelector } from "@/components/host-selector";
 import { ChatInterface } from "@/components/chat-interface";
@@ -91,6 +91,28 @@ export default function ChatPage() {
   const [showHostSelector, setShowHostSelector] = useState(false);
   const [isSelectingHost, setIsSelectingHost] = useState(false);
 
+  /**
+   * Apply theme to the document
+   * Handles 'auto' mode by detecting system preference
+   */
+  const applyTheme = useCallback((theme: 'light' | 'dark' | 'auto') => {
+    if (typeof window === 'undefined') return;
+
+    document.documentElement.classList.remove('light', 'dark');
+
+    if (theme === 'auto') {
+      // Auto mode: Detect system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        document.documentElement.classList.add('dark');
+      }
+      // If not dark, default is light (no class needed)
+    } else {
+      // Explicit light or dark mode
+      document.documentElement.classList.add(theme);
+    }
+  }, []);
+
   // Check if user is first-time (settings === null) after settings load
   useEffect(() => {
     if (!loadingSettings) {
@@ -108,11 +130,37 @@ export default function ChatPage() {
         }
         if (settings.theme) {
           console.log('[Settings] Restoring theme:', settings.theme);
-          // TODO: Apply theme when theme system is implemented
+          applyTheme(settings.theme);
+        } else {
+          // No theme saved, apply default (auto)
+          applyTheme('auto');
         }
       }
     }
-  }, [settings, loadingSettings]);
+  }, [settings, loadingSettings, applyTheme]);
+
+  // Listen for system preference changes (for Auto mode)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+      // Only re-apply if current theme is 'auto'
+      if (settings?.theme === 'auto') {
+        console.log('[Theme] System preference changed to:', e.matches ? 'dark' : 'light');
+        applyTheme('auto');
+      }
+    };
+
+    // Add listener
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+
+    // Cleanup
+    return () => {
+      mediaQuery.removeEventListener('change', handleSystemThemeChange);
+    };
+  }, [settings?.theme, applyTheme]);
 
   const [usdcAddress, setUsdcAddress] = useState<string>("");
 
@@ -236,10 +284,7 @@ export default function ChatPage() {
   // Handler for theme changes
   const handleThemeChange = async (theme: 'light' | 'dark' | 'auto') => {
     // Apply theme immediately (optimistic UI)
-    document.documentElement.classList.remove('light', 'dark');
-    if (theme !== 'auto') {
-      document.documentElement.classList.add(theme);
-    }
+    applyTheme(theme);
 
     // Show immediate feedback (optimistic)
     toast({

@@ -569,33 +569,36 @@ components/
 
 Polish the user interface, add analytics tracking, and ensure all components work together seamlessly.
 
-### Sub-Phase 5.1: Theme System Integration
+### Sub-Phase 5.1: Theme System Integration ✅
 
 **Milestones**:
-- [ ] Theme selector component created
-- [ ] Light/Dark/Auto modes working
-- [ ] Theme persisted to S5
-- [ ] Applied on app load
-- [ ] System preference detection (Auto mode)
-- [ ] Smooth theme transitions
+- [x] Theme selector component created
+- [x] Light/Dark/Auto modes working
+- [x] Theme persisted to S5
+- [x] Applied on app load
+- [x] System preference detection (Auto mode)
+- [x] Smooth theme transitions
 
 **Implementation Files**:
 ```
 components/
-├── theme-selector.tsx             # Theme switcher component
+├── theme-selector.tsx             # Theme switcher component (created in 4.1)
 └── advanced-settings-panel.tsx    # Updated (add theme selector)
+app/
+├── chat/page.tsx                  # Updated (theme application logic)
+└── globals.css                    # Updated (smooth transitions)
 ```
 
 **Key Tasks**:
-1. Create `ThemeSelector` component with 3 buttons
-2. Implement theme application:
+1. ✅ Create `ThemeSelector` component with 3 buttons
+2. ✅ Implement theme application:
    - Light: Remove `dark` class from `<html>`
    - Dark: Add `dark` class to `<html>`
    - Auto: Detect with `window.matchMedia('(prefers-color-scheme: dark)')`
-3. On selection: `updateSettings({ theme })`
-4. Apply theme on app load (from settings)
-5. Add listener for system preference changes (Auto mode)
-6. Add CSS transition: `html { transition: background-color 0.3s }`
+3. ✅ On selection: `updateSettings({ theme })`
+4. ✅ Apply theme on app load (from settings)
+5. ✅ Add listener for system preference changes (Auto mode)
+6. ✅ Add CSS transition: `html { transition: background-color 0.3s }`
 
 **Success Criteria**:
 - ✅ Theme selector in Advanced Settings
@@ -604,6 +607,14 @@ components/
 - ✅ Auto mode follows system preference
 - ✅ Smooth transition animation
 - ✅ Works across page reloads
+
+**Implementation Complete**: Theme system fully integrated with:
+- **applyTheme helper** - useCallback function that applies theme with Auto mode support
+- **System preference detection** - Uses window.matchMedia to detect dark/light preference
+- **Applied on app load** - Theme restored from settings and applied immediately
+- **Preference change listener** - Listens for OS theme changes and re-applies when in Auto mode
+- **Smooth CSS transitions** - Added to html element for 0.3s background-color and color transitions
+- **ThemeSelector component** - Already created in Sub-Phase 4.1, integrated in Advanced Settings
 
 ### Sub-Phase 5.2: Settings Panel UI
 

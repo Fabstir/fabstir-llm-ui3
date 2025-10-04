@@ -59,6 +59,12 @@
   * {
     @apply border-border;
   }
+
+  html {
+    /* Smooth theme transitions */
+    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+  }
+
   body {
     @apply bg-background text-foreground;
   }
