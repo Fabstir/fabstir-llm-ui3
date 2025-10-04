@@ -675,16 +675,21 @@ export default function ChatPage() {
                       // Graceful degradation: panel still works, just not persisted
                     }
                   }}
+                  lastUpdated={settings?.lastUpdated}
                   onResetPreferences={async () => {
-                    if (confirm('Are you sure you want to reset all preferences? This cannot be undone.')) {
-                      try {
-                        await resetSettings();
-                        console.log('Preferences reset successfully');
-                        // Reload to show setup wizard
-                        window.location.reload();
-                      } catch (error) {
-                        console.error('Failed to reset preferences:', error);
-                      }
+                    // Confirmation dialog is handled by SettingsPanel component
+                    try {
+                      await resetSettings();
+                      console.log('Preferences reset successfully');
+                      // Reload to show setup wizard
+                      window.location.reload();
+                    } catch (error) {
+                      console.error('Failed to reset preferences:', error);
+                      toast({
+                        title: "Failed to reset preferences",
+                        description: "Please try again",
+                        variant: "destructive",
+                      });
                     }
                   }}
                 />

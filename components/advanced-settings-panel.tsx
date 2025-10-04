@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { PaymentTokenSelector } from '@/components/payment-token-selector';
 import { ThemeSelector } from '@/components/theme-selector';
+import { SettingsPanel } from '@/components/settings-panel';
 
 interface AdvancedSettingsPanelProps {
   // Session details
@@ -40,6 +41,7 @@ interface AdvancedSettingsPanelProps {
   // Settings
   isExpanded?: boolean;
   onExpandedChange?: (expanded: boolean) => void;
+  lastUpdated?: number;
 
   // Reset
   onResetPreferences?: () => void;
@@ -64,6 +66,7 @@ export function AdvancedSettingsPanel({
   onPaymentTokenChange,
   isExpanded: controlledExpanded,
   onExpandedChange,
+  lastUpdated,
   onResetPreferences,
 }: AdvancedSettingsPanelProps) {
   const [internalExpanded, setInternalExpanded] = useState(false);
@@ -289,31 +292,15 @@ export function AdvancedSettingsPanel({
               </div>
             </div>
 
-            {/* Reset Preferences */}
-            {onResetPreferences && (
-              <>
-                <Separator />
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm font-semibold">
-                      <RotateCcw className="h-4 w-4" />
-                      Reset Preferences
-                    </div>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={onResetPreferences}
-                      className="text-xs"
-                    >
-                      Reset All
-                    </Button>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Clear all saved preferences and start fresh
-                  </div>
-                </div>
-              </>
-            )}
+            {/* Settings Panel with Summary and Reset */}
+            <Separator />
+            <SettingsPanel
+              selectedModel={currentModel}
+              preferredPaymentToken={preferredPaymentToken}
+              theme={currentTheme}
+              lastUpdated={lastUpdated}
+              onResetPreferences={onResetPreferences}
+            />
           </div>
         </motion.div>
       </CollapsibleContent>
