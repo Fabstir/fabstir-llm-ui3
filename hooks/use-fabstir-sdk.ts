@@ -218,9 +218,9 @@ export function useFabstirSDK() {
 
       // Get real managers from SDK
       setPaymentManager(newSdk.getPaymentManager());
-      setSessionManager(newSdk.getSessionManager());
+      setSessionManager(await newSdk.getSessionManager());
       setHostManager(newSdk.getHostManager());
-      setStorageManager(newSdk.getStorageManager());
+      setStorageManager(await newSdk.getStorageManager());
       setTreasuryManager(newSdk.getTreasuryManager());
       setIsAuthenticated(true);
 

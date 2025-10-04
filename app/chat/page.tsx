@@ -667,7 +667,7 @@ export default function ChatPage() {
                 <AdvancedSettingsPanel
                   sessionId={sessionId}
                   totalTokens={totalTokens}
-                  totalCost={totalCost}
+                  totalCost={totalCost.toFixed(6)}
                   hostAddress={selectedHost?.address}
                   hostEndpoint={selectedHost?.endpoint}
                   hostStake={selectedHost?.stake}
