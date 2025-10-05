@@ -106,7 +106,7 @@ export function useHosts(hostManager: HostManager | null) {
 
   // Smart host selection based on model
   const selectHostForModel = async (modelId: string): Promise<ParsedHost | null> => {
-    console.log(`[Smart Host Selection] Finding host for model: ${modelId}`);
+    console.log(`[Smart Host Selection] Finding host for model preference: ${modelId}`);
 
     // Discover hosts if not already discovered
     const hosts = availableHosts?.length > 0 ? availableHosts : (await refetchHosts()).data || [];
@@ -116,15 +116,14 @@ export function useHosts(hostManager: HostManager | null) {
       return null;
     }
 
-    // Filter hosts that support the selected model
-    const compatibleHosts = hosts.filter(host =>
-      host.models.some(model => model.includes(modelId) || modelId.includes(model))
-    );
+    // Filter hosts that have models registered (hosts advertise models by CID, not filename)
+    // For now, select from any host with models until ModelRegistry integration is added
+    const compatibleHosts = hosts.filter(host => host.models && host.models.length > 0);
 
-    console.log(`[Smart Host Selection] Found ${compatibleHosts.length} compatible hosts out of ${hosts.length}`);
+    console.log(`[Smart Host Selection] Found ${compatibleHosts.length} hosts with models out of ${hosts.length}`);
 
     if (compatibleHosts.length === 0) {
-      console.error(`[Smart Host Selection] No hosts support model: ${modelId}`);
+      console.error(`[Smart Host Selection] No hosts with registered models found`);
       return null;
     }
 
@@ -135,7 +134,7 @@ export function useHosts(hostManager: HostManager | null) {
     console.log(`[Smart Host Selection] Selected host ${randomIndex + 1} of ${compatibleHosts.length}:`, {
       address: selected.address,
       endpoint: selected.endpoint,
-      models: selected.models,
+      models: selected.models.length > 0 ? `${selected.models.length} models` : 'no models',
     });
 
     setSelectedHost(selected);

@@ -33,68 +33,81 @@ export function USDCDeposit({ primaryAccount, subAccount, usdcAddress, onDeposit
   const { data: walletClient } = useWalletClient();
   const { toast } = useToast();
 
-  // Debug: Log what address wagmi sees
-  useEffect(() => {
-    console.log("🔍 USDCDeposit - EOA Address from wagmi:", eoaAddress);
-    console.log("🔍 USDCDeposit - Wallet Client:", walletClient);
-  }, [eoaAddress, walletClient]);
-
-  // Fetch balances using ethers.js
+  // Fetch balances using ethers.js (no wallet connection required)
   const fetchBalances = async () => {
-    if (!eoaAddress) {
-      console.log("❌ Cannot fetch balances - missing eoaAddress");
-      console.log("Current eoaAddress:", eoaAddress);
+    if (!primaryAccount || !usdcAddress) {
+      console.log("❌ Cannot fetch balances - missing required params");
       return;
     }
 
     try {
       console.log("Fetching USDC balances for:", { eoaAddress, primaryAccount, subAccount, usdcAddress });
 
-      // Create ethers provider using RPC URL
+      // Create ethers provider using RPC URL (no wallet needed for reading)
       const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL_BASE_SEPOLIA;
       const provider = new ethers.JsonRpcProvider(rpcUrl);
       const usdcContract = new ethers.Contract(usdcAddress, USDC_ABI, provider);
 
       const balanceFetches = [
-        usdcContract.balanceOf(eoaAddress),
         usdcContract.balanceOf(primaryAccount),
       ];
 
+      // Add EOA balance if wallet connected
+      if (eoaAddress) {
+        balanceFetches.unshift(usdcContract.balanceOf(eoaAddress));
+      }
+
+      // Add sub-account balance if available
       if (subAccount) {
         balanceFetches.push(usdcContract.balanceOf(subAccount));
       }
 
       const balances = await Promise.all(balanceFetches);
 
-      const eoaFormatted = ethers.formatUnits(balances[0], 6);
-      const primaryFormatted = ethers.formatUnits(balances[1], 6);
-      const subFormatted = subAccount ? ethers.formatUnits(balances[2], 6) : "0";
+      let balanceIndex = 0;
+
+      // If EOA wallet connected, first balance is EOA
+      if (eoaAddress) {
+        const eoaFormatted = ethers.formatUnits(balances[balanceIndex], 6);
+        setEoaBalance(eoaFormatted);
+        balanceIndex++;
+      } else {
+        setEoaBalance(null); // No EOA wallet
+      }
+
+      // Primary account balance
+      const primaryFormatted = ethers.formatUnits(balances[balanceIndex], 6);
+      setPrimaryBalance(primaryFormatted);
+      balanceIndex++;
+
+      // Sub-account balance
+      if (subAccount) {
+        const subFormatted = ethers.formatUnits(balances[balanceIndex], 6);
+        setSubBalance(subFormatted);
+      } else {
+        setSubBalance("0");
+      }
 
       console.log("USDC Balances fetched:", {
-        eoaBalance: eoaFormatted,
+        eoaBalance: eoaAddress ? ethers.formatUnits(balances[0], 6) : "N/A (no wallet)",
         primaryBalance: primaryFormatted,
-        subBalance: subFormatted,
       });
-
-      setEoaBalance(eoaFormatted);
-      setPrimaryBalance(primaryFormatted);
-      setSubBalance(subFormatted);
     } catch (error: any) {
       console.error("Failed to fetch USDC balances:", error);
       console.error("Error details:", error.message);
       // Set to 0 on error so UI shows something
-      setEoaBalance("0");
+      if (eoaAddress) setEoaBalance("0");
       setPrimaryBalance("0");
       setSubBalance("0");
     }
   };
 
-  // Fetch on mount and when addresses change
+  // Fetch on mount and when addresses change (no EOA wallet required)
   useEffect(() => {
-    if (eoaAddress && usdcAddress && primaryAccount) {
+    if (usdcAddress && primaryAccount) {
       fetchBalances();
     }
-  }, [eoaAddress, primaryAccount, usdcAddress]);
+  }, [eoaAddress, primaryAccount, usdcAddress, subAccount]);
 
   const handleDeposit = async () => {
     if (!walletClient || !eoaAddress) {
@@ -241,11 +254,19 @@ export function USDCDeposit({ primaryAccount, subAccount, usdcAddress, onDeposit
               Connected Wallet (Source)
             </div>
             <div className="font-mono text-lg">
-              {eoaBalance !== null ? `${eoaBalance} USDC` : "Loading..."}
+              {eoaAddress ? (
+                eoaBalance !== null ? `${eoaBalance} USDC` : "Loading..."
+              ) : (
+                <span className="text-muted-foreground">Not Connected</span>
+              )}
             </div>
-            {eoaAddress && (
+            {eoaAddress ? (
               <div className="text-xs text-muted-foreground mt-1">
                 {eoaAddress.slice(0, 6)}...{eoaAddress.slice(-4)}
+              </div>
+            ) : (
+              <div className="text-xs text-yellow-600 mt-1">
+                ⚠️ Use "Connect Wallet" button above to deposit
               </div>
             )}
           </div>

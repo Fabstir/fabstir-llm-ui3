@@ -117,6 +117,16 @@ export default function ChatPage() {
     }
   }, []);
 
+  // Host management - must come BEFORE any useEffect that references selectedHost
+  const {
+    availableHosts,
+    selectedHost,
+    setSelectedHost,
+    isDiscoveringHosts,
+    discoverHosts,
+    selectHostForModel,
+  } = useHosts(effectiveHostManager);
+
   // Check if user is first-time (settings === null) after settings load
   useEffect(() => {
     if (!loadingSettings) {
@@ -130,7 +140,23 @@ export default function ChatPage() {
         // Apply restored settings
         if (settings.selectedModel) {
           console.log('[Settings] Restoring model preference:', settings.selectedModel);
-          // TODO: Auto-select model when model selector is implemented
+
+          // Auto-select host for the saved model (if not already selected)
+          // Only attempt if hostManager is ready
+          if (!selectedHost && selectHostForModel && effectiveHostManager) {
+            console.log('[Settings] Auto-selecting host for saved model:', settings.selectedModel);
+            selectHostForModel(settings.selectedModel).then((host) => {
+              if (host) {
+                console.log('[Settings] Host auto-selected:', host.address);
+              } else {
+                console.warn('[Settings] No compatible hosts found for saved model:', settings.selectedModel);
+              }
+            }).catch((error) => {
+              console.error('[Settings] Failed to auto-select host:', error);
+            });
+          } else if (!effectiveHostManager) {
+            console.log('[Settings] HostManager not ready yet - will auto-select when available');
+          }
         }
         if (settings.theme) {
           console.log('[Settings] Restoring theme:', settings.theme);
@@ -141,7 +167,7 @@ export default function ChatPage() {
         }
       }
     }
-  }, [settings, loadingSettings, applyTheme]);
+  }, [settings, loadingSettings, applyTheme, selectedHost, selectHostForModel, effectiveHostManager]);
 
   // Listen for system preference changes (for Auto mode)
   useEffect(() => {
@@ -167,15 +193,6 @@ export default function ChatPage() {
   }, [settings?.theme, applyTheme]);
 
   const [usdcAddress, setUsdcAddress] = useState<string>("");
-
-  const {
-    availableHosts,
-    selectedHost,
-    setSelectedHost,
-    isDiscoveringHosts,
-    discoverHosts,
-    selectHostForModel,
-  } = useHosts(effectiveHostManager);
 
   const {
     messages,
@@ -403,10 +420,40 @@ export default function ChatPage() {
 
                 console.log('[SetupWizard] Settings saved successfully');
 
+                // Automatically select a compatible host for the chosen model
+                console.log('[SetupWizard] Auto-selecting host for model:', wizardSettings.selectedModel);
+                const host = await selectHostForModel(wizardSettings.selectedModel);
+
+                if (host) {
+                  console.log('[SetupWizard] Host auto-selected:', host.address);
+
+                  // Save host address to settings
+                  await updateSettings({
+                    lastHostAddress: host.address,
+                  });
+
+                  toast({
+                    title: "Setup complete! 🎉",
+                    description: `Model: ${wizardSettings.selectedModel.split('.')[0]} | Host selected`,
+                  });
+                } else {
+                  console.warn('[SetupWizard] No compatible hosts found for model:', wizardSettings.selectedModel);
+                  toast({
+                    title: "Setup complete",
+                    description: "No hosts available for this model yet. Please select a different model.",
+                    variant: "destructive",
+                  });
+                }
+
                 // Close wizard and show chat
                 setShowSetupWizard(false);
               } catch (error: any) {
                 console.error('[SetupWizard] Failed to save settings:', error);
+                toast({
+                  title: "Setup error",
+                  description: "Settings may not have been saved. Please try again.",
+                  variant: "destructive",
+                });
                 // Still close wizard even on error (graceful degradation)
                 setShowSetupWizard(false);
               }
