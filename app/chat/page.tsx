@@ -192,6 +192,23 @@ export default function ChatPage() {
     };
   }, [settings?.theme, applyTheme]);
 
+  // Auto-connect Base Account if user preference is set
+  useEffect(() => {
+    if (
+      !loadingSettings &&
+      settings?.preferredWalletType === 'base-account' &&
+      !accountInfo && // Not already connected
+      !isConnectingBase && // Not currently connecting
+      effectiveHostManager // HostManager ready (ensures SDK is initialized)
+    ) {
+      console.log('[Auto-Connect] Connecting Base Account based on user preference');
+      handleBaseAccountConnect().catch(err => {
+        console.error('[Auto-Connect] Failed:', err);
+        // Don't retry to avoid infinite loops
+      });
+    }
+  }, [settings, loadingSettings, accountInfo, isConnectingBase, effectiveHostManager]);
+
   const [usdcAddress, setUsdcAddress] = useState<string>("");
 
   const {
@@ -416,6 +433,7 @@ export default function ChatPage() {
                   selectedModel: wizardSettings.selectedModel,
                   theme: wizardSettings.theme,
                   preferredPaymentToken: wizardSettings.preferredPaymentToken,
+                  preferredWalletType: wizardSettings.preferredWalletType,
                 });
 
                 console.log('[SetupWizard] Settings saved successfully');

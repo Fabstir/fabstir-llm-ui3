@@ -42,6 +42,7 @@ interface SetupWizardProps {
     selectedModel: string;
     theme: 'light' | 'dark' | 'auto';
     preferredPaymentToken: 'USDC' | 'ETH';
+    preferredWalletType?: 'base-account' | 'regular-wallet';
   }) => Promise<void>;
   onSkip?: () => void;
 }
@@ -52,6 +53,7 @@ export function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
   const [selectedModel, setSelectedModel] = useState<string>(AVAILABLE_MODELS[0].id);
   const [selectedTheme, setSelectedTheme] = useState<'light' | 'dark' | 'auto'>('auto');
   const [selectedPayment, setSelectedPayment] = useState<'USDC' | 'ETH'>('USDC');
+  const [useBaseAccount, setUseBaseAccount] = useState(true); // Default to using Base Account
   const [isSaving, setIsSaving] = useState(false);
 
   const totalSteps = 3;
@@ -79,6 +81,7 @@ export function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
         selectedModel,
         theme: selectedTheme,
         preferredPaymentToken: selectedPayment,
+        preferredWalletType: useBaseAccount ? 'base-account' : 'regular-wallet',
       });
     } catch (error) {
       console.error('[SetupWizard] Failed to save settings:', error);
@@ -362,6 +365,27 @@ export function SetupWizard({ onComplete, onSkip }: SetupWizardProps) {
                       </p>
                     </div>
                   </button>
+                </div>
+
+                {/* Base Account Preference */}
+                <div className="mt-6 p-4 bg-muted/50 rounded-lg border">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={useBaseAccount}
+                      onChange={(e) => setUseBaseAccount(e.target.checked)}
+                      className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-sm mb-1 flex items-center gap-2">
+                        Connect with Base Account for popup-free transactions
+                        <Badge variant="secondary" className="text-xs">Recommended</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Automatically connect on your next visit. You'll approve permissions once, then enjoy popup-free AI sessions.
+                      </p>
+                    </div>
+                  </label>
                 </div>
               </div>
             </motion.div>
