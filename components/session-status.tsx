@@ -1,9 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CheckCircle2, DollarSign, Hash } from "lucide-react";
+import { CheckCircle2, DollarSign, Hash, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ParsedHost } from "@/types/host";
 
 interface SessionStatusProps {
   sessionId: bigint | null;
@@ -11,6 +12,8 @@ interface SessionStatusProps {
   totalCost: number;
   hostAddress?: string;
   model?: string;
+  selectedHost?: ParsedHost | null;
+  preferredPaymentToken?: 'USDC' | 'ETH';
 }
 
 export function SessionStatus({
@@ -19,8 +22,17 @@ export function SessionStatus({
   totalCost,
   hostAddress,
   model,
+  selectedHost,
+  preferredPaymentToken = 'USDC',
 }: SessionStatusProps) {
   if (!sessionId) return null;
+
+  // Calculate pricing rate based on payment token
+  const pricingRate = selectedHost
+    ? preferredPaymentToken === 'ETH'
+      ? `${(Number(selectedHost.minPricePerTokenNative) / 1e18).toFixed(8)} ETH/token`
+      : `${(Number(selectedHost.minPricePerTokenStable) / 1_000_000).toFixed(6)} USDC/token`
+    : null;
 
   return (
     <motion.div
@@ -69,6 +81,13 @@ export function SessionStatus({
                 <span className="font-mono">{totalCost.toFixed(4)}</span>
                 <span className="text-muted-foreground text-xs">USD</span>
               </div>
+
+              {pricingRate && (
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-mono text-xs">{pricingRate}</span>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>

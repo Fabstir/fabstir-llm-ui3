@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { DollarSign, Zap, TrendingUp, Wallet } from "lucide-react";
+import { ParsedHost } from "@/types/host";
 
 interface CostDashboardProps {
   usdcBalance: string;
@@ -23,6 +24,7 @@ interface CostDashboardProps {
     tokens?: number;
     role?: string;
   }>;
+  selectedHost?: ParsedHost | null;
 }
 
 export function CostDashboard({
@@ -31,14 +33,20 @@ export function CostDashboard({
   totalCost,
   totalTokens,
   messages,
+  selectedHost,
 }: CostDashboardProps) {
   // Prepare data for chart - only include messages with tokens
   const messagesWithTokens = messages.filter((m) => m.tokens && m.role !== "system");
 
+  // Use actual pricing from selected host
+  const pricePerToken = selectedHost?.minPricePerTokenStable
+    ? Number(selectedHost.minPricePerTokenStable)
+    : 316;  // Fallback to 0.000316 USDC/token
+
   const chartData = messagesWithTokens.map((m, idx) => ({
     index: idx + 1,
     tokens: m.tokens!,
-    cost: (m.tokens! * 2000) / 1000000,
+    cost: (m.tokens! * pricePerToken) / 1000000,
     cumulative: messagesWithTokens
       .slice(0, idx + 1)
       .reduce((sum, msg) => sum + (msg.tokens || 0), 0),

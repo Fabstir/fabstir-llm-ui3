@@ -112,6 +112,19 @@ export function HostSelector({
                     ))}
                   </div>
                 </div>
+                <div>
+                  <p className="text-sm font-medium mb-1">Pricing:</p>
+                  <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                    <div className="flex justify-between">
+                      <span>USDC:</span>
+                      <span className="font-mono">{(Number(host.minPricePerTokenStable) / 1_000_000).toFixed(6)} USDC/token</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>ETH:</span>
+                      <span className="font-mono">{(Number(host.minPricePerTokenNative) / 1e18).toFixed(8)} ETH/token</span>
+                    </div>
+                  </div>
+                </div>
                 <div className="flex justify-between items-center pt-2">
                   <span className="text-sm text-muted-foreground">
                     Stake: {(Number(host.stake) / 1e18).toFixed(2)} FAB

@@ -679,6 +679,8 @@ export default function ChatPage() {
                     totalCost={totalCost}
                     hostAddress={selectedHost.address}
                     model={selectedHost.models[0]}
+                    selectedHost={selectedHost}
+                    preferredPaymentToken={settings?.preferredPaymentToken}
                   />
                 )}
 
@@ -718,6 +720,7 @@ export default function ChatPage() {
                     totalCost={totalCost}
                     totalTokens={totalTokens}
                     messages={messages}
+                    selectedHost={selectedHost}
                   />
                 )}
 
