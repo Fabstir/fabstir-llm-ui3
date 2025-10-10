@@ -15,12 +15,16 @@ const MOCK_HOSTS: ParsedHost[] = [
     endpoint: "ws://localhost:8080",
     models: ["llama-3.1-8b", "mistral-7b"],
     stake: BigInt("1000000000000000000"), // 1 FAB
+    minPricePerTokenNative: BigInt("11363636363636"),  // ~0.0000114 ETH/token (~$0.05 @ $4400 ETH)
+    minPricePerTokenStable: BigInt(316)  // 0.000316 USDC/token
   },
   {
     address: "0x456...def",
     endpoint: "ws://localhost:8081",
     models: ["llama-3.2-1b-instruct"],
     stake: BigInt("500000000000000000"), // 0.5 FAB
+    minPricePerTokenNative: BigInt("11363636363636"),  // ~0.0000114 ETH/token
+    minPricePerTokenStable: BigInt(316)  // 0.000316 USDC/token
   },
 ];
 
@@ -63,6 +67,8 @@ export function useHosts(hostManager: HostManager | null) {
               endpoint: host.apiUrl || host.endpoint || "",
               models: host.supportedModels || [],
               stake: hostStatus.stake || BigInt(0),
+              minPricePerTokenNative: host.minPricePerTokenNative || BigInt(0),  // ETH/BNB pricing
+              minPricePerTokenStable: host.minPricePerTokenStable || BigInt(316), // USDC pricing with fallback
             };
           } catch (error) {
             console.warn(`Failed to get status for host ${host.address}:`, error);
@@ -72,6 +78,8 @@ export function useHosts(hostManager: HostManager | null) {
               endpoint: host.apiUrl || host.endpoint || "",
               models: host.supportedModels || [],
               stake: host.stake || BigInt(0),
+              minPricePerTokenNative: host.minPricePerTokenNative || BigInt(0),  // ETH/BNB pricing
+              minPricePerTokenStable: host.minPricePerTokenStable || BigInt(316), // USDC pricing with fallback
             };
           }
         });
@@ -85,6 +93,8 @@ export function useHosts(hostManager: HostManager | null) {
         console.log(`    Address: ${host.address}`);
         console.log(`    Endpoint: ${host.endpoint}`);
         console.log(`    Models: ${host.models.join(", ")}`);
+        console.log(`    USDC Price: ${(Number(host.minPricePerTokenStable) / 1_000_000).toFixed(6)} USDC/token`);
+        console.log(`    ETH Price: ${(Number(host.minPricePerTokenNative) / 1e18).toFixed(8)} ETH/token`);
         console.log(`    Stake: ${(Number(host.stake) / 1e18).toFixed(2)} FAB`);
       });
 
@@ -145,6 +155,20 @@ export function useHosts(hostManager: HostManager | null) {
     return selected;
   };
 
+  // Price filtering utility - filter hosts by max USDC price
+  const filterByMaxPrice = (maxPrice: bigint): ParsedHost[] => {
+    if (!availableHosts) return [];
+    return availableHosts.filter(host => host.minPricePerTokenStable <= maxPrice);
+  };
+
+  // Price sorting utility - sort hosts by USDC price (lowest first)
+  const sortByPrice = (hosts?: ParsedHost[]): ParsedHost[] => {
+    const hostsToSort = hosts || availableHosts || [];
+    return [...hostsToSort].sort((a, b) =>
+      Number(a.minPricePerTokenStable - b.minPricePerTokenStable)
+    );
+  };
+
   return {
     availableHosts: availableHosts || [],
     selectedHost,
@@ -154,5 +178,7 @@ export function useHosts(hostManager: HostManager | null) {
     selectHostForModel,
     refetchHosts,
     error,
+    filterByMaxPrice,  // NEW: Filter hosts by max USDC price
+    sortByPrice,       // NEW: Sort hosts by USDC price
   };
 }
