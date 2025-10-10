@@ -41,9 +41,17 @@ export function useSessionRecovery() {
         return;
       }
 
-      // Convert stake back to BigInt if present
-      if (session.selectedHost && typeof session.selectedHost.stake === 'string') {
-        session.selectedHost.stake = BigInt(session.selectedHost.stake);
+      // Convert BigInt fields back if present
+      if (session.selectedHost) {
+        if (typeof session.selectedHost.stake === 'string') {
+          session.selectedHost.stake = BigInt(session.selectedHost.stake);
+        }
+        if (typeof (session.selectedHost as any).minPricePerTokenNative === 'string') {
+          (session.selectedHost as any).minPricePerTokenNative = BigInt((session.selectedHost as any).minPricePerTokenNative);
+        }
+        if (typeof (session.selectedHost as any).minPricePerTokenStable === 'string') {
+          (session.selectedHost as any).minPricePerTokenStable = BigInt((session.selectedHost as any).minPricePerTokenStable);
+        }
       }
 
       setRecoveredSession(session);
@@ -70,7 +78,9 @@ export function useSessionRecovery() {
           selectedHost: selectedHost ? {
             ...selectedHost,
             stake: selectedHost.stake.toString(), // Convert BigInt to string for serialization
-          } : selectedHost,
+            minPricePerTokenNative: selectedHost.minPricePerTokenNative.toString(),
+            minPricePerTokenStable: selectedHost.minPricePerTokenStable.toString(),
+          } as any as ParsedHost : selectedHost,  // Type assertion for serialization
           totalTokens,
           totalCost,
           timestamp: Date.now(),
