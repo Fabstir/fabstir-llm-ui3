@@ -511,6 +511,67 @@ fabstir-llm-ui3/
 
 ---
 
+## Phase 11: Dual Pricing System Integration (SDK v1.3.0)
+
+### Overview
+
+Integrate SDK v1.3.0's dual pricing system that separates native token (ETH/BNB) and stablecoin (USDC) pricing, allowing hosts to set independent prices for each payment method.
+
+**Reference**: See `docs/DUAL_PRICING_INTEGRATION_PLAN.md` for detailed implementation plan with sub-phases.
+
+### Milestones
+
+- [ ] SDK v1.3.0 installed from tarball
+- [ ] Type definitions updated with dual pricing fields
+- [ ] Host discovery returns dual pricing data
+- [ ] Session creation uses actual host pricing
+- [ ] UI displays both USDC and ETH pricing
+- [ ] Price filtering and sorting working
+- [ ] Cost calculations accurate throughout
+
+### Implementation Files
+
+```
+fabstir-llm-ui3/
+├── types/
+│   └── host.ts                    # Updated with dual pricing fields
+├── hooks/
+│   ├── use-hosts.ts              # Parse dual pricing from hosts
+│   └── use-chat-session.ts       # Use actual host pricing
+├── components/
+│   ├── host-selector.tsx         # Display both prices
+│   └── session-status.tsx        # Show pricing used in session
+└── docs/
+    └── DUAL_PRICING_INTEGRATION_PLAN.md  # Detailed sub-phase plan
+```
+
+### Key Tasks
+
+1. **Sub-Phase 11.1**: SDK Upgrade & Environment Setup
+2. **Sub-Phase 11.2**: Type System Updates
+3. **Sub-Phase 11.3**: Host Discovery & Parsing
+4. **Sub-Phase 11.4**: Session Creation Updates
+5. **Sub-Phase 11.5**: UI Components & Display
+6. **Sub-Phase 11.6**: Testing & Verification
+
+### Success Criteria
+
+- ✅ Hosts display both USDC and ETH prices
+- ✅ Sessions use correct pricing based on payment token
+- ✅ Cost calculations accurate to 6 decimals
+- ✅ Backward compatible with fallback pricing (316 USDC)
+- ✅ No hardcoded pricing values in code
+- ✅ Users can see pricing before selecting host
+- ✅ Blockchain verification confirms correct pricing
+
+### Breaking Changes from v1.2.x
+
+- ⚠️ `minPricePerToken` → `minPricePerTokenNative` + `minPricePerTokenStable`
+- ⚠️ Must use `PaymentManager.approveToken()` for USDC approval
+- ⚠️ Session config requires `chainId` parameter
+
+---
+
 ## Development Guidelines
 
 ### For Claude Code
@@ -595,6 +656,7 @@ Instructions for Claude Code:
 - **ETH Flow Example**: `examples/eth-mvp-flow-sdk.test.tsx`
 - **SDK Quick Reference Documentation**: `docs/SDK_QUICK_REFERENCE.md`
 - **SDK Documentation**: `docs/SDK_API.md`
+- **Dual Pricing Integration Plan**: `docs/DUAL_PRICING_INTEGRATION_PLAN.md` (Phase 11)
 - **Brand Assets**: `public/` folder and `docs/fabstir_color_profile_1.json`
 
 ---
