@@ -229,7 +229,8 @@ export default function ChatPage() {
     selectedHost,
     effectivePaymentManager,
     accountInfo?.subAccount || userAddress,
-    effectiveStorageManager
+    effectiveStorageManager,
+    settings  // Pass settings for payment token preference
   );
 
   const { usdcBalance, ethBalance, isLoading: isLoadingBalances } = useBalances(

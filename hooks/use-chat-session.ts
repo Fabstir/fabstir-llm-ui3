@@ -20,7 +20,6 @@ type StorageManager = any;
 
 // Session configuration constants
 const SESSION_DEPOSIT = "2.0";
-const PRICE_PER_TOKEN = 2000;
 const PROOF_INTERVAL = 100;
 const SESSION_DURATION = 86400;
 
@@ -90,7 +89,8 @@ export function useChatSession(
   selectedHost: ParsedHost | null,
   paymentManager?: any,
   userAddress?: string,
-  storageManager?: StorageManager | null
+  storageManager?: StorageManager | null,
+  settings?: { preferredPaymentToken?: 'USDC' | 'ETH' } | null
 ) {
   const { toast } = useToast();
 
@@ -171,17 +171,26 @@ export function useChatSession(
         }
       }
 
-      // Step 2: Start session
+      // Step 2: Get pricing from selected host based on payment token preference
+      const pricePerToken = settings?.preferredPaymentToken === 'ETH'
+        ? Number(selectedHost.minPricePerTokenNative)  // Use native pricing for ETH
+        : Number(selectedHost.minPricePerTokenStable);  // Use stable pricing for USDC (default)
+
+      console.log(`💰 Using host pricing: ${pricePerToken} (${settings?.preferredPaymentToken || 'USDC'})`);
+
+      // Step 3: Start session
       const config: any = {
         depositAmount: SESSION_DEPOSIT,
-        pricePerToken: Number(PRICE_PER_TOKEN), // Ensure it's a number, not bigint
+        pricePerToken: pricePerToken,  // Use actual host pricing
         duration: SESSION_DURATION,
         proofInterval: PROOF_INTERVAL,
         model: selectedHost.models[0],
         provider: selectedHost.address,
         hostAddress: selectedHost.address,
         endpoint: selectedHost.endpoint,
-        paymentToken: chain.contracts.usdcToken,
+        paymentToken: settings?.preferredPaymentToken === 'ETH'
+          ? undefined  // Omit for native ETH payments
+          : chain.contracts.usdcToken,  // Include for USDC payments
         useDeposit: false, // Use direct payment with Auto Spend Permissions
         chainId: 84532, // Base Sepolia
       };
@@ -359,7 +368,13 @@ export function useChatSession(
       // Auto-save conversation to S5 after each message
       if (isStorageReady && messages.length > 0) {
         const updatedTokens = totalTokens + tokens;
-        const updatedCost = totalCost + (tokens * PRICE_PER_TOKEN) / 1000000;
+
+        // Use actual host pricing
+        const pricePerToken = selectedHost?.minPricePerTokenStable
+          ? Number(selectedHost.minPricePerTokenStable)
+          : 316;  // Fallback to 0.000316 USDC/token
+
+        const updatedCost = totalCost + (tokens * pricePerToken) / 1000000;
         await storeConversation([...messages], updatedTokens, updatedCost);
       }
     },
@@ -449,10 +464,16 @@ export function useChatSession(
 
       if (tokens) {
         setTotalTokens((prev) => prev + tokens);
-        setTotalCost((prev) => prev + (tokens * PRICE_PER_TOKEN) / 1000000);
+
+        // Use actual pricing from selected host
+        const pricePerToken = selectedHost?.minPricePerTokenStable
+          ? Number(selectedHost.minPricePerTokenStable)
+          : 316;  // Fallback to 0.000316 USDC/token
+
+        setTotalCost((prev) => prev + (tokens * pricePerToken) / 1000000);
       }
     },
-    []
+    [selectedHost]  // Add selectedHost to dependencies
   );
 
   const buildContext = useCallback((): string => {
