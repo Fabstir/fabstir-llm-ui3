@@ -142,6 +142,7 @@ export function useHosts(hostManager: HostManager | null) {
         const randomIndex = Math.floor(Math.random() * result.data.length);
         setSelectedHost(result.data[randomIndex]);
         console.log(`🎲 Randomly selected host ${randomIndex + 1} of ${result.data.length}: ${result.data[randomIndex].address}`);
+        console.log(`ℹ️  Random selection not saved to S5 - promotes decentralization`);
       }
     } catch (error) {
       console.error('[Discover Hosts] Discovery failed:', error);

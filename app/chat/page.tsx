@@ -97,6 +97,7 @@ export default function ChatPage() {
 
   // First-time user detection
   const [showSetupWizard, setShowSetupWizard] = useState(false);
+  const [hasLoadedSettingsOnce, setHasLoadedSettingsOnce] = useState(false);
 
   // Header modal states
   const [showModelSelector, setShowModelSelector] = useState(false);
@@ -139,22 +140,70 @@ export default function ChatPage() {
 
   // Check if user is first-time (settings === null) after settings load
   useEffect(() => {
-    if (!loadingSettings) {
-      if (settings === null) {
-        console.log('[First-Time User] No settings found - showing setup wizard');
+    // Wait for settings to finish loading before making any decisions
+    if (loadingSettings) {
+      console.log('[Settings] Loading settings from S5...');
+      return; // Still loading, don't make any decisions yet
+    }
+
+    // Settings finished loading - now decide what to do
+    if (settings === null) {
+      // No settings found
+      if (hasLoadedSettingsOnce) {
+        // Already loaded settings successfully before - this is a re-load issue
+        console.log('[Settings] Settings became null on reload (ignoring - already loaded once)');
+        setShowSetupWizard(false);
+      } else if (effectiveStorageManager) {
+        // StorageManager available AND no settings found in S5 = truly first-time user
+        console.log('[First-Time User] No settings found in S5 - showing setup wizard');
         setShowSetupWizard(true);
       } else {
-        console.log('[Returning User] Settings loaded:', settings);
+        // No StorageManager yet - don't show wizard yet (settings might exist in S5)
+        console.log('[Waiting] StorageManager not available - waiting for wallet connection to check S5');
         setShowSetupWizard(false);
+      }
+    } else {
+      // Settings found - returning user!
+      console.log('[Returning User] Settings loaded from S5:', settings);
+      setShowSetupWizard(false);
+      setHasLoadedSettingsOnce(true); // Mark that we've successfully loaded settings
 
-        // Apply restored settings
-        if (settings.selectedModel) {
-          console.log('[Settings] Restoring model preference:', settings.selectedModel);
-        }
+      // Apply restored settings
+      if (settings.selectedModel) {
+        console.log('[Settings] Restoring model preference:', settings.selectedModel);
+      }
 
-        // Restore saved host address
-        if (settings.lastHostAddress && !selectedHost && effectiveHostManager) {
-          console.log('[Settings] Restoring saved host:', settings.lastHostAddress);
+      // Debug: Check host restoration conditions
+      console.log('[Settings] Host restoration check:', {
+        hasLastHostAddress: !!settings.lastHostAddress,
+        lastHostAddress: settings.lastHostAddress,
+        selectedHost: selectedHost?.address,
+        hasEffectiveHostManager: !!effectiveHostManager
+      });
+
+      // Restore saved host address (with automatic discovery)
+      if (settings.lastHostAddress && !selectedHost && effectiveHostManager) {
+        console.log('[Settings] Restoring saved host:', settings.lastHostAddress);
+
+        // First, discover hosts if not already discovered
+        if (availableHosts.length === 0 && !isDiscoveringHosts) {
+          console.log('[Settings] Discovering hosts to restore saved host...');
+          discoverHosts().then(() => {
+            // After discovery completes, try to restore saved host
+            restoreHostByAddress(settings.lastHostAddress!).then((host) => {
+              if (host) {
+                console.log('[Settings] Host restored after discovery:', host.address);
+              } else {
+                console.warn('[Settings] Saved host not found on network, user must select manually');
+              }
+            }).catch((error) => {
+              console.error('[Settings] Failed to restore host:', error);
+            });
+          }).catch((error) => {
+            console.error('[Settings] Host discovery failed:', error);
+          });
+        } else if (availableHosts.length > 0) {
+          // Hosts already discovered, restore immediately
           restoreHostByAddress(settings.lastHostAddress).then((host) => {
             if (host) {
               console.log('[Settings] Host restored:', host.address);
@@ -165,16 +214,16 @@ export default function ChatPage() {
             console.error('[Settings] Failed to restore host:', error);
           });
         }
-        if (settings.theme) {
-          console.log('[Settings] Restoring theme:', settings.theme);
-          applyTheme(settings.theme);
-        } else {
-          // No theme saved, apply default (auto)
-          applyTheme('auto');
-        }
+      }
+      if (settings.theme) {
+        console.log('[Settings] Restoring theme:', settings.theme);
+        applyTheme(settings.theme);
+      } else {
+        // No theme saved, apply default (auto)
+        applyTheme('auto');
       }
     }
-  }, [settings, loadingSettings, applyTheme, selectedHost, restoreHostByAddress, effectiveHostManager]);
+  }, [settings, loadingSettings, applyTheme, selectedHost, restoreHostByAddress, effectiveHostManager, effectiveStorageManager, hasLoadedSettingsOnce, availableHosts, isDiscoveringHosts, discoverHosts]);
 
   // Listen for system preference changes (for Auto mode)
   useEffect(() => {
@@ -728,8 +777,8 @@ export default function ChatPage() {
           </Card>
         )}
 
-        {/* USDC Deposit (Base Account only, after host selected) */}
-        {accountInfo?.isUsingBaseAccount && accountInfo.primaryAccount && selectedHost && (
+        {/* USDC Deposit (Base Account only, when balance insufficient) */}
+        {accountInfo?.isUsingBaseAccount && accountInfo.primaryAccount && selectedHost && !hasEnough && (
           <div className="max-w-4xl mx-auto">
             <USDCDeposit
               primaryAccount={accountInfo.primaryAccount}
@@ -746,9 +795,35 @@ export default function ChatPage() {
         {/* Payment Mode Tabs & Chat (only when host selected) */}
         {(isAuthenticated || accountInfo) && selectedHost && (
           <div className="max-w-6xl mx-auto">
-            <PaymentModeTabs defaultMode="usdc">
+            <PaymentModeTabs defaultMode="usdc" compact={true}>
               <div className="space-y-4">
-                {/* Session Status */}
+                {/* Session Controls - Compact inline layout */}
+                <div className="flex items-center justify-center py-3">
+                  <SessionControls
+                    isSessionActive={isSessionActive}
+                    onStartSession={startSession}
+                    onEndSession={endSession}
+                    isStarting={isStartingSession}
+                    isEnding={isEndingSession}
+                    disabled={!selectedHost}
+                    insufficientBalance={{
+                      hasEnough,
+                      balance,
+                      address: checkingAddress,
+                      isUsingBaseAccount: accountInfo?.isUsingBaseAccount ?? false,
+                    }}
+                  />
+                </div>
+
+                {/* Chat Interface - Takes main space */}
+                <ChatInterface
+                  messages={messages}
+                  onSendMessage={sendMessage}
+                  isSending={isSendingMessage}
+                  isSessionActive={isSessionActive}
+                />
+
+                {/* Session Status - Collapsible details */}
                 {sessionId && (
                   <SessionStatus
                     sessionId={sessionId}
@@ -761,35 +836,7 @@ export default function ChatPage() {
                   />
                 )}
 
-                {/* Session Controls */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Session</CardTitle>
-                    <CardDescription>
-                      {isSessionActive
-                        ? "Session active - you can chat with the AI"
-                        : "Start a session to begin chatting"}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <SessionControls
-                      isSessionActive={isSessionActive}
-                      onStartSession={startSession}
-                      onEndSession={endSession}
-                      isStarting={isStartingSession}
-                      isEnding={isEndingSession}
-                      disabled={!selectedHost}
-                      insufficientBalance={{
-                        hasEnough,
-                        balance,
-                        address: checkingAddress,
-                        isUsingBaseAccount: accountInfo?.isUsingBaseAccount ?? false,
-                      }}
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Cost Dashboard (only when session active) */}
+                {/* Cost Dashboard - Analytics (only when session active) */}
                 {isSessionActive && (
                   <CostDashboard
                     usdcBalance={usdcBalance}
@@ -800,14 +847,6 @@ export default function ChatPage() {
                     selectedHost={selectedHost}
                   />
                 )}
-
-                {/* Chat Interface */}
-                <ChatInterface
-                  messages={messages}
-                  onSendMessage={sendMessage}
-                  isSending={isSendingMessage}
-                  isSessionActive={isSessionActive}
-                />
 
                 {/* Advanced Settings Panel - Collapsible */}
                 <AdvancedSettingsPanel
