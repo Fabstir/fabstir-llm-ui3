@@ -99,6 +99,17 @@ export default function ChatPage() {
   const [showSetupWizard, setShowSetupWizard] = useState(false);
   const [hasLoadedSettingsOnce, setHasLoadedSettingsOnce] = useState(false);
 
+  // Preserve savedHostAddress across StorageManager transitions
+  const [preservedHostAddress, setPreservedHostAddress] = useState<string | undefined>(undefined);
+
+  // Update preserved host address when settings change
+  useEffect(() => {
+    if (settings?.lastHostAddress && settings.lastHostAddress !== preservedHostAddress) {
+      console.log('[Host Preservation] Saving host address:', settings.lastHostAddress);
+      setPreservedHostAddress(settings.lastHostAddress);
+    }
+  }, [settings?.lastHostAddress]);
+
   // Header modal states
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
@@ -226,6 +237,20 @@ export default function ChatPage() {
       });
     }
   }, [settings, loadingSettings, accountInfo, isConnectingBase, effectiveHostManager]);
+
+  // Automatic host discovery when wallet connects
+  useEffect(() => {
+    if (
+      (accountInfo || isAuthenticated) &&  // Wallet connected
+      !selectedHost &&                     // No host selected yet
+      !isDiscoveringHosts &&              // Not already discovering
+      effectiveHostManager &&              // HostManager ready
+      availableHosts.length === 0         // Haven't discovered yet
+    ) {
+      console.log('[Auto-Discovery] Triggering host discovery after wallet connection');
+      discoverHosts();
+    }
+  }, [accountInfo, isAuthenticated, selectedHost, isDiscoveringHosts, effectiveHostManager, availableHosts, discoverHosts]);
 
   const [usdcAddress, setUsdcAddress] = useState<string>("");
 
@@ -670,71 +695,20 @@ export default function ChatPage() {
           </Card>
         )}
 
-        {/* Host Discovery & Selection (when authenticated but no host) */}
+        {/* Automatic Host Discovery Status (when authenticated but no host) */}
         {(isAuthenticated || accountInfo) && !selectedHost && (
           <Card className="max-w-4xl mx-auto">
-            <CardHeader>
-              <CardTitle>Discover AI Hosts</CardTitle>
-              <CardDescription>
-                Find available hosts on the Fabstir network before starting a session
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-center">
-                <Button
-                  onClick={() => {
-                    console.log('[Button Click] Discover Hosts button clicked');
-                    console.log('[Button Click] effectiveHostManager available:', !!effectiveHostManager);
-                    console.log('[Button Click] baseAccountSdk available:', !!baseAccountSdk);
-                    console.log('[Button Click] hostManager (regular) available:', !!hostManager);
-                    discoverHosts();
-                  }}
-                  disabled={isDiscoveringHosts}
-                  size="lg"
-                  className="gap-2"
-                >
-                  {isDiscoveringHosts ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Discovering hosts...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="h-5 w-5" />
-                      Discover Hosts
-                    </>
-                  )}
-                </Button>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-center gap-3">
+                {isDiscoveringHosts ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">Finding available AI hosts...</span>
+                  </>
+                ) : (
+                  <span className="text-sm text-muted-foreground">Preparing to discover hosts...</span>
+                )}
               </div>
-
-              {availableHosts.length > 0 && (
-                <div className="space-y-3">
-                  <p className="text-sm text-center text-muted-foreground">
-                    Found {availableHosts.length} host(s). Select one to continue:
-                  </p>
-                  <HostSelector
-                    hosts={availableHosts}
-                    selectedHost={selectedHost}
-                    onSelect={async (host) => {
-                      try {
-                        setSelectedHost(host);
-                        await updateSettings({ lastHostAddress: host.address });
-                        toast({
-                          title: "Host selected",
-                          description: `Connected to ${host.address.slice(0, 8)}...`,
-                        });
-                      } catch (error: any) {
-                        console.error('[Host Discovery] Save failed:', error);
-                        toast({
-                          title: "Host selected",
-                          description: "Preference not saved but host is active",
-                        });
-                      }
-                    }}
-                    isLoading={isDiscoveringHosts}
-                  />
-                </div>
-              )}
             </CardContent>
           </Card>
         )}
@@ -815,7 +789,7 @@ export default function ChatPage() {
                   sessionId={sessionId}
                   totalTokens={totalTokens}
                   totalCost={totalCost.toFixed(6)}
-                  savedHostAddress={settings?.lastHostAddress}
+                  savedHostAddress={settings?.lastHostAddress || preservedHostAddress}
                   hostAddress={selectedHost?.address}
                   hostEndpoint={selectedHost?.endpoint}
                   hostStake={selectedHost?.stake}
@@ -913,14 +887,13 @@ export default function ChatPage() {
               ...currentRecent.filter(id => id !== modelId)
             ].slice(0, 5);
 
-            // Save to S5 (model + host address)
+            // Save model preference to S5 (NOT the host - only save host via explicit "Change Host" action)
             await updateSettings({
               selectedModel: modelId,
               lastUsedModels: updatedRecent,
-              lastHostAddress: host.address,
             });
 
-            console.log('[Model Selector] Settings updated - model and host saved');
+            console.log('[Model Selector] Settings updated - model preference saved (host NOT saved for decentralization)');
 
             // Track analytics after successful save
             analytics.modelSelected(modelId, 'selector');

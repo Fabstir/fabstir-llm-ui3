@@ -153,29 +153,38 @@ export function AdvancedSettingsPanel({
                       Change Host
                     </Button>
                   </div>
-                  {savedHostAddress && hostAddress ? (
-                    // Show full host details only if saved to S5
+                  {savedHostAddress ? (
+                    // Show saved host from S5 storage
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="secondary" className="text-xs">Saved to S5</Badge>
+                        {hostAddress && savedHostAddress.toLowerCase() !== hostAddress.toLowerCase() && (
+                          <Badge variant="outline" className="text-xs text-orange-600 border-orange-600">
+                            Not currently used
+                          </Badge>
+                        )}
                       </div>
                       <div className="space-y-1">
                         <div className="text-muted-foreground">Address</div>
-                        <div className="font-mono text-xs break-all">{hostAddress}</div>
+                        <div className="font-mono text-xs break-all">{savedHostAddress}</div>
                       </div>
-                      {hostEndpoint && (
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground">Endpoint</div>
-                          <div className="font-mono text-xs break-all">{hostEndpoint}</div>
-                        </div>
-                      )}
-                      {hostStake && (
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground">Stake</div>
-                          <div className="font-semibold">
-                            {(Number(hostStake) / 1e18).toLocaleString()} FAB
-                          </div>
-                        </div>
+                      {hostAddress && savedHostAddress.toLowerCase() === hostAddress.toLowerCase() && (
+                        <>
+                          {hostEndpoint && (
+                            <div className="space-y-1">
+                              <div className="text-muted-foreground">Endpoint</div>
+                              <div className="font-mono text-xs break-all">{hostEndpoint}</div>
+                            </div>
+                          )}
+                          {hostStake && (
+                            <div className="space-y-1">
+                              <div className="text-muted-foreground">Stake</div>
+                              <div className="font-semibold">
+                                {(Number(hostStake) / 1e18).toLocaleString()} FAB
+                              </div>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   ) : (
