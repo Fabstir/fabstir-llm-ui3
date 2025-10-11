@@ -117,6 +117,28 @@ export function useBaseAccount() {
           signer: subAccountSigner,
         });
 
+        // Step 6: Wait for SDK and spend permissions to settle (prevent race conditions)
+        console.log('[Base Account] Waiting for signer and spend permission settlement...');
+
+        // Wait for:
+        // 1. SDK to fully register the signer (AuthManager internal registration)
+        // 2. Spend permission to propagate through Base Account Kit infrastructure
+        // This prevents "no matching signer" and "Transaction failed to confirm" errors
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Verify signer is registered (non-throwing check)
+        try {
+          const authManager = sdk.getAuthManager();
+          const registeredSigner = authManager.getSigner(subAccountAddress);
+
+          if (registeredSigner) {
+            console.log('[Base Account] ✅ Signer verified and ready');
+          }
+        } catch (err) {
+          // Signer not yet registered, but that's okay - retry logic will handle it
+          console.warn('[Base Account] ⚠️ Signer not immediately available, but will retry if needed');
+        }
+
         // Store SDK reference for later use
         sdkInstance = sdk;
 

@@ -113,6 +113,24 @@ export function useChatSession(
 
   // Mutation: Start session
   const startSessionMutation = useMutation({
+    retry: (failureCount, error: any) => {
+      // Retry for Base Account race conditions (max 2 retries)
+      if (failureCount < 2) {
+        // Case 1: Signer not registered yet
+        if (error.message?.includes("no matching signer found for account")) {
+          console.log(`[Session Start] Retrying due to signer race condition (attempt ${failureCount + 1}/2)...`);
+          return true;
+        }
+
+        // Case 2: Spend permission not fully settled yet (400 errors from chain proxy)
+        if (error.message?.includes("Transaction failed to confirm")) {
+          console.log(`[Session Start] Retrying due to spend permission settlement delay (attempt ${failureCount + 1}/2)...`);
+          return true;
+        }
+      }
+      return false;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 3000), // Exponential backoff: 1s, 2s
     mutationFn: async () => {
       if (!selectedHost) throw new Error("No host selected");
 
@@ -275,23 +293,32 @@ export function useChatSession(
         errorMessage = error.data.message;
       }
 
-      // Detect spend permission depletion (400 Bad Request from Base Account Kit)
+      // Detect spend permission depletion vs insufficient balance
       const isSpendPermissionError =
-        error.message?.toLowerCase().includes("spend permission") ||
-        error.message?.toLowerCase().includes("allowance") ||
-        error.message?.toLowerCase().includes("insufficient") ||
-        (error.code === 400 && userAddress); // 400 from Base Account usually means permission issue
+        error.message?.toLowerCase().includes("transfer amount exceeds balance") ||
+        error.message?.toLowerCase().includes("insufficient balance to perform useroperation");
+
+      const isLowBalance =
+        error.message?.toLowerCase().includes("insufficient") &&
+        !isSpendPermissionError;
 
       if (isSpendPermissionError) {
-        errorTitle = "Spend Permission Depleted";
+        errorTitle = "Spend Permission Allowance Depleted";
         errorMessage =
-          "Your sub-account's spend permission allowance has been used up. " +
-          "Please disconnect Base Account from your wallet settings and reconnect to create a fresh sub-account with renewed allowance.";
+          "Your Base Account sub-account's spend permission has been used up from previous sessions. " +
+          "Even after clearing browser data, the same sub-account is reused. " +
+          "\n\n**To fix:** Open Coinbase Wallet → Settings → Connected Sites → Disconnect this app → Reconnect. " +
+          "This will create a fresh sub-account with renewed allowance.";
 
         console.error("🚨 SPEND PERMISSION DEPLETED");
-        console.error("   This sub-account was created with old allowance ($3 USDC)");
-        console.error("   New sub-accounts get $100 USDC allowance");
-        console.error("   → Disconnect Base Account and reconnect to fix");
+        console.error("   Sub-account:", userAddress);
+        console.error("   Cause: Base Account Kit reuses existing sub-accounts even after browser data cleared");
+        console.error("   Solution: Disconnect app from Coinbase Wallet settings and reconnect");
+      } else if (isLowBalance) {
+        errorTitle = "Insufficient Balance";
+        errorMessage =
+          "Not enough USDC to start session ($2.00 required). " +
+          "Please deposit USDC to your PRIMARY account.";
       }
 
       toast({
