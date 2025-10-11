@@ -96,11 +96,24 @@
 **Fixed in Sub-Phase 11.6**:
 - ✅ **use-session-recovery.ts**: Added dual pricing field serialization (minPricePerTokenNative, minPricePerTokenStable)
 - ✅ **app/chat/page.tsx (Setup Wizard)**: Fixed infinite loop bug by removing automatic host selection from wizard completion handler
+- ✅ **use-chat-session.ts**: Fixed three Base Account Kit race conditions with automatic retry logic
 
 **Setup Wizard Fix Details**:
 - **Problem**: Wizard tried to auto-select host without discovering hosts first, causing loop
 - **Solution**: Removed auto-host selection logic, simplified to save settings and close wizard
 - **User Flow**: Now guides users to "Connect wallet and discover hosts" after setup completion
+
+**Base Account Kit Race Conditions Fixed** (January 11, 2025):
+- **Case 1: Signer Registration Delay**: "no matching signer found for account"
+  - Cause: SDK's AuthManager needs time to register signer after authenticate()
+  - Fix: Automatic retry with exponential backoff (1s, 2s)
+- **Case 2: Spend Permission Settlement Delay**: "Transaction failed to confirm"
+  - Cause: Base Account Kit infrastructure needs time to propagate permissions
+  - Fix: Automatic retry with exponential backoff (1s, 2s)
+- **Case 3: Spend Permission Balance Sync Delay**: "transfer amount exceeds balance"
+  - Cause: Virtual balance hasn't synced to sub-account yet
+  - Fix: Automatic retry with exponential backoff (1s, 2s)
+- **Result**: First-click session creation failures eliminated. Seamless user experience.
 
 ---
 

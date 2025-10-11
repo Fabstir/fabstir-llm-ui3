@@ -127,6 +127,16 @@ export function useChatSession(
           console.log(`[Session Start] Retrying due to spend permission settlement delay (attempt ${failureCount + 1}/2)...`);
           return true;
         }
+
+        // Case 3: Spend permission balance sync delay
+        // Base Account Kit's virtual balance hasn't synced to sub-account yet
+        if (
+          error.message?.toLowerCase().includes("transfer amount exceeds balance") ||
+          error.message?.toLowerCase().includes("insufficient balance to perform useroperation")
+        ) {
+          console.log(`[Session Start] Retrying due to spend permission balance sync delay (attempt ${failureCount + 1}/2)...`);
+          return true;
+        }
       }
       return false;
     },
