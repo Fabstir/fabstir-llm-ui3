@@ -178,29 +178,33 @@ export function useFabstirSDK() {
       console.log("Authenticating with wallet:", address);
 
       // Lazy load SDK when actually needed
-      const { FabstirSDKCore, ChainRegistry, ChainId } = await import(
+      const { FabstirSDKCore, ChainId } = await import(
         "@fabstir/sdk-core"
       );
 
-      const chain = ChainRegistry.getChain(ChainId.BASE_SEPOLIA);
-
+      // Use environment variables for contract addresses (NOT ChainRegistry - it has old addresses)
       const sdkConfig = {
         mode: "production" as const,
         chainId: ChainId.BASE_SEPOLIA,
         rpcUrl: RPC_URLS.BASE_SEPOLIA,
         contractAddresses: {
-          jobMarketplace: chain.contracts.jobMarketplace,
-          nodeRegistry: chain.contracts.nodeRegistry,
-          proofSystem: chain.contracts.proofSystem,
-          hostEarnings: chain.contracts.hostEarnings,
-          fabToken: chain.contracts.fabToken,
-          usdcToken: chain.contracts.usdcToken,
-          modelRegistry: chain.contracts.modelRegistry,
+          jobMarketplace: process.env.NEXT_PUBLIC_CONTRACT_JOB_MARKETPLACE!,
+          nodeRegistry: process.env.NEXT_PUBLIC_CONTRACT_NODE_REGISTRY!,
+          proofSystem: process.env.NEXT_PUBLIC_CONTRACT_PROOF_SYSTEM!,
+          hostEarnings: process.env.NEXT_PUBLIC_CONTRACT_HOST_EARNINGS!,
+          fabToken: process.env.NEXT_PUBLIC_CONTRACT_FAB_TOKEN!,
+          usdcToken: process.env.NEXT_PUBLIC_CONTRACT_USDC_TOKEN!,
+          modelRegistry: process.env.NEXT_PUBLIC_CONTRACT_MODEL_REGISTRY!,
         },
         s5Config: {
           portalUrl: process.env.NEXT_PUBLIC_S5_PORTAL_URL,
         },
       };
+
+      console.log('[SDK Init] Using contract addresses from .env.local:', {
+        nodeRegistry: sdkConfig.contractAddresses.nodeRegistry,
+        jobMarketplace: sdkConfig.contractAddresses.jobMarketplace
+      });
 
       const newSdk = new FabstirSDKCore(sdkConfig);
 

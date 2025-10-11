@@ -39,6 +39,10 @@ export function useHosts(hostManager: HostManager | null) {
   } = useQuery({
     queryKey: ["hosts"],
     queryFn: async () => {
+      console.log('[Query Function] Discovery started');
+      console.log('[Query Function] IS_MOCK_MODE:', IS_MOCK_MODE);
+      console.log('[Query Function] hostManager available:', !!hostManager);
+
       // Mock mode: Return mock hosts immediately
       if (IS_MOCK_MODE) {
         console.log("Mock: Discovering hosts");
@@ -47,19 +51,35 @@ export function useHosts(hostManager: HostManager | null) {
       }
 
       // Production mode: Use SDK
-      if (!hostManager) throw new Error("Host manager not initialized");
+      if (!hostManager) {
+        console.error('[Query Function] Host manager NOT initialized - throwing error');
+        throw new Error("Host manager not initialized");
+      }
 
-      const hosts = await hostManager.discoverAllActiveHostsWithModels();
+      console.log('[Query Function] Calling hostManager.discoverAllActiveHostsWithModels()...');
+
+      let hosts;
+      try {
+        hosts = await hostManager.discoverAllActiveHostsWithModels();
+        console.log('[Query Function] SDK returned:', hosts?.length || 0, 'hosts');
+        console.log('[Query Function] Raw hosts data:', hosts);
+      } catch (sdkError) {
+        console.error('[Query Function] SDK discovery failed:', sdkError);
+        throw sdkError;
+      }
 
       // Parse hosts and fetch detailed status (including stake) for each
       const parsedHostsPromises = hosts
-        .filter((host: any) =>
-          (host.supportedModels || []).length > 0 &&
-          (host.apiUrl || host.endpoint)
-        )
+        .filter((host: any) => {
+          const hasModels = (host.supportedModels || []).length > 0;
+          const hasEndpoint = !!(host.apiUrl || host.endpoint);
+          console.log('[Filter] Host', host.address, '- hasModels:', hasModels, 'hasEndpoint:', hasEndpoint);
+          return hasModels && hasEndpoint;
+        })
         .map(async (host: any) => {
           try {
             // Get detailed host status to retrieve stake information
+            console.log('[Parse] Getting status for host:', host.address);
             const hostStatus = await hostManager.getHostStatus(host.address);
 
             return {
@@ -71,7 +91,7 @@ export function useHosts(hostManager: HostManager | null) {
               minPricePerTokenStable: host.minPricePerTokenStable || BigInt(316), // USDC pricing with fallback
             };
           } catch (error) {
-            console.warn(`Failed to get status for host ${host.address}:`, error);
+            console.warn(`[Parse] Failed to get status for host ${host.address}:`, error);
             // Fallback to host data without stake
             return {
               address: host.address,
@@ -84,6 +104,7 @@ export function useHosts(hostManager: HostManager | null) {
           }
         });
 
+      console.log('[Query Function] Parsing', parsedHostsPromises.length, 'hosts...');
       const parsedHosts = await Promise.all(parsedHostsPromises);
 
       // Log discovered hosts for debugging endpoint/address matching
@@ -106,11 +127,25 @@ export function useHosts(hostManager: HostManager | null) {
 
   // Auto-select random host when hosts are discovered
   const handleDiscoverHosts = async () => {
-    const result = await refetchHosts();
-    if (result.data && result.data.length > 0 && !selectedHost) {
-      const randomIndex = Math.floor(Math.random() * result.data.length);
-      setSelectedHost(result.data[randomIndex]);
-      console.log(`🎲 Randomly selected host ${randomIndex + 1} of ${result.data.length}: ${result.data[randomIndex].address}`);
+    console.log('[Discover Hosts] Starting discovery...');
+    console.log('[Discover Hosts] HostManager available:', !!hostManager);
+
+    try {
+      const result = await refetchHosts();
+      console.log('[Discover Hosts] Discovery result:', {
+        success: !!result.data,
+        count: result.data?.length || 0,
+        error: result.error
+      });
+
+      if (result.data && result.data.length > 0 && !selectedHost) {
+        const randomIndex = Math.floor(Math.random() * result.data.length);
+        setSelectedHost(result.data[randomIndex]);
+        console.log(`🎲 Randomly selected host ${randomIndex + 1} of ${result.data.length}: ${result.data[randomIndex].address}`);
+      }
+    } catch (error) {
+      console.error('[Discover Hosts] Discovery failed:', error);
+      throw error;
     }
   };
 
@@ -169,6 +204,38 @@ export function useHosts(hostManager: HostManager | null) {
     );
   };
 
+  // Restore host by address (from saved settings)
+  const restoreHostByAddress = async (address: string): Promise<ParsedHost | null> => {
+    console.log('[Restore Host] Attempting to restore host:', address);
+
+    // Check if already in available hosts
+    const existingHost = availableHosts?.find(h => h.address.toLowerCase() === address.toLowerCase());
+    if (existingHost) {
+      console.log('[Restore Host] Found in cached hosts');
+      setSelectedHost(existingHost);
+      return existingHost;
+    }
+
+    // Need to discover hosts to find it
+    console.log('[Restore Host] Not in cache, discovering hosts...');
+    try {
+      const result = await refetchHosts();
+      const foundHost = result.data?.find(h => h.address.toLowerCase() === address.toLowerCase());
+
+      if (foundHost) {
+        console.log('[Restore Host] Found after discovery');
+        setSelectedHost(foundHost);
+        return foundHost;
+      } else {
+        console.warn('[Restore Host] Host not found on network:', address);
+        return null;
+      }
+    } catch (error) {
+      console.error('[Restore Host] Failed to discover hosts:', error);
+      return null;
+    }
+  };
+
   return {
     availableHosts: availableHosts || [],
     selectedHost,
@@ -177,6 +244,7 @@ export function useHosts(hostManager: HostManager | null) {
     discoverHosts: handleDiscoverHosts,
     selectHostForModel,
     refetchHosts,
+    restoreHostByAddress,  // NEW: Restore saved host
     error,
     filterByMaxPrice,  // NEW: Filter hosts by max USDC price
     sortByPrice,       // NEW: Sort hosts by USDC price

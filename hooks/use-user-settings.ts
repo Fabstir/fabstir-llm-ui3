@@ -166,35 +166,44 @@ export function useUserSettings(storageManager: StorageManager | null): UseUserS
    * @returns Promise that resolves when S5 save completes (or fails gracefully)
    */
   const updateSettings = useCallback(async (partial: PartialUserSettings) => {
-    if (!storageManager) {
-      console.warn('[useUserSettings] Cannot update - StorageManager not available');
-      return;
-    }
-
-    try {
-      // Step 1: Optimistic update - update local state IMMEDIATELY (synchronous)
-      // This causes React to re-render, updating the UI instantly
+    // Step 1: Optimistic update - update local state IMMEDIATELY (synchronous)
+    // This causes React to re-render, updating the UI instantly
+    const updatedSettings = await new Promise<UserSettings>((resolve) => {
       setSettings(prev => {
+        let newSettings: UserSettings;
         if (!prev) {
           // If no settings exist, create new settings object
-          return {
+          newSettings = {
             version: 1 as UserSettingsVersion,
             lastUpdated: Date.now(),
             selectedModel: '',
             ...partial
           };
+        } else {
+          newSettings = {
+            ...prev,
+            ...partial,
+            lastUpdated: Date.now()
+          };
         }
-
-        return {
-          ...prev,
-          ...partial,
-          lastUpdated: Date.now()
-        };
+        resolve(newSettings);
+        return newSettings;
       });
+    });
 
-      // Step 2: Save to S5 in background (async, doesn't block UI)
+    // Step 2: Save to persistent storage
+    if (!storageManager) {
+      // Fallback: Use localStorage when StorageManager not available (no wallet connected yet)
+      console.warn('[useUserSettings] StorageManager not available - using localStorage fallback');
+      cacheSettings(updatedSettings);
+      console.log('[useUserSettings] Settings saved to localStorage:', partial);
+      return;
+    }
+
+    try {
+      // Save to S5 in background (async, doesn't block UI)
       await storageManager.updateUserSettings(partial);
-      console.log('[useUserSettings] Settings updated successfully:', partial);
+      console.log('[useUserSettings] Settings updated successfully to S5:', partial);
 
       // Update localStorage cache on successful save
       setSettings(prev => {

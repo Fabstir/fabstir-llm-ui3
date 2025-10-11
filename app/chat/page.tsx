@@ -76,6 +76,15 @@ export default function ChatPage() {
   const effectivePaymentManager = baseAccountSdk?.getPaymentManager() || paymentManager;
   const effectiveStorageManager = baseAccountSdk?.getStorageManager() || storageManager;
 
+  // Debug: Log which managers are being used
+  useEffect(() => {
+    console.log('[Manager Debug] effectiveHostManager source:', {
+      fromBaseAccount: !!baseAccountSdk?.getHostManager(),
+      fromFabstirSDK: !!hostManager,
+      isAvailable: !!effectiveHostManager
+    });
+  }, [baseAccountSdk, hostManager, effectiveHostManager]);
+
   // User Settings (S5 storage integration)
   const {
     settings,
@@ -125,6 +134,7 @@ export default function ChatPage() {
     isDiscoveringHosts,
     discoverHosts,
     selectHostForModel,
+    restoreHostByAddress,
   } = useHosts(effectiveHostManager);
 
   // Check if user is first-time (settings === null) after settings load
@@ -140,23 +150,20 @@ export default function ChatPage() {
         // Apply restored settings
         if (settings.selectedModel) {
           console.log('[Settings] Restoring model preference:', settings.selectedModel);
+        }
 
-          // Auto-select host for the saved model (if not already selected)
-          // Only attempt if hostManager is ready
-          if (!selectedHost && selectHostForModel && effectiveHostManager) {
-            console.log('[Settings] Auto-selecting host for saved model:', settings.selectedModel);
-            selectHostForModel(settings.selectedModel).then((host) => {
-              if (host) {
-                console.log('[Settings] Host auto-selected:', host.address);
-              } else {
-                console.warn('[Settings] No compatible hosts found for saved model:', settings.selectedModel);
-              }
-            }).catch((error) => {
-              console.error('[Settings] Failed to auto-select host:', error);
-            });
-          } else if (!effectiveHostManager) {
-            console.log('[Settings] HostManager not ready yet - will auto-select when available');
-          }
+        // Restore saved host address
+        if (settings.lastHostAddress && !selectedHost && effectiveHostManager) {
+          console.log('[Settings] Restoring saved host:', settings.lastHostAddress);
+          restoreHostByAddress(settings.lastHostAddress).then((host) => {
+            if (host) {
+              console.log('[Settings] Host restored:', host.address);
+            } else {
+              console.warn('[Settings] Saved host not found on network, user must select manually');
+            }
+          }).catch((error) => {
+            console.error('[Settings] Failed to restore host:', error);
+          });
         }
         if (settings.theme) {
           console.log('[Settings] Restoring theme:', settings.theme);
@@ -167,7 +174,7 @@ export default function ChatPage() {
         }
       }
     }
-  }, [settings, loadingSettings, applyTheme, selectedHost, selectHostForModel, effectiveHostManager]);
+  }, [settings, loadingSettings, applyTheme, selectedHost, restoreHostByAddress, effectiveHostManager]);
 
   // Listen for system preference changes (for Auto mode)
   useEffect(() => {
@@ -287,34 +294,47 @@ export default function ChatPage() {
   const handleBaseAccountConnect = async () => {
     try {
       // Import SDK and initialize if needed
-      const { FabstirSDKCore, ChainRegistry, ChainId } = await import("@fabstir/sdk-core");
-      const chain = ChainRegistry.getChain(ChainId.BASE_SEPOLIA);
+      const { FabstirSDKCore, ChainId } = await import("@fabstir/sdk-core");
+
+      console.log('[Base Account] Using contract addresses from .env.local');
 
       // Create SDK if not exists
       let sdkInstance = sdk;
       if (!sdkInstance) {
+        console.log('[Base Account] Creating new SDK instance...');
         const sdkConfig = {
           mode: "production" as const,
           chainId: ChainId.BASE_SEPOLIA,
           rpcUrl: process.env.NEXT_PUBLIC_RPC_URL_BASE_SEPOLIA!,
           contractAddresses: {
-            jobMarketplace: chain.contracts.jobMarketplace,
-            nodeRegistry: chain.contracts.nodeRegistry,
-            proofSystem: chain.contracts.proofSystem,
-            hostEarnings: chain.contracts.hostEarnings,
-            fabToken: chain.contracts.fabToken,
-            usdcToken: chain.contracts.usdcToken,
-            modelRegistry: chain.contracts.modelRegistry,
+            jobMarketplace: process.env.NEXT_PUBLIC_CONTRACT_JOB_MARKETPLACE!,
+            nodeRegistry: process.env.NEXT_PUBLIC_CONTRACT_NODE_REGISTRY!,
+            proofSystem: process.env.NEXT_PUBLIC_CONTRACT_PROOF_SYSTEM!,
+            hostEarnings: process.env.NEXT_PUBLIC_CONTRACT_HOST_EARNINGS!,
+            fabToken: process.env.NEXT_PUBLIC_CONTRACT_FAB_TOKEN!,
+            usdcToken: process.env.NEXT_PUBLIC_CONTRACT_USDC_TOKEN!,
+            modelRegistry: process.env.NEXT_PUBLIC_CONTRACT_MODEL_REGISTRY!,
           },
           s5Config: {
             portalUrl: process.env.NEXT_PUBLIC_S5_PORTAL_URL,
           },
         };
+        console.log('[Base Account] SDK config:', {
+          nodeRegistry: sdkConfig.contractAddresses.nodeRegistry,
+          jobMarketplace: sdkConfig.contractAddresses.jobMarketplace,
+          usdcToken: sdkConfig.contractAddresses.usdcToken
+        });
         sdkInstance = new FabstirSDKCore(sdkConfig);
+      } else {
+        console.log('[Base Account] Using existing SDK instance');
       }
 
       // Connect with Base Account
-      await connectWithBaseAccount(sdkInstance, chain.contracts.usdcToken, ChainId.BASE_SEPOLIA);
+      await connectWithBaseAccount(
+        sdkInstance,
+        process.env.NEXT_PUBLIC_CONTRACT_USDC_TOKEN!,
+        ChainId.BASE_SEPOLIA
+      );
     } catch (error) {
       console.error("Base Account connection failed:", error);
     }
@@ -439,30 +459,18 @@ export default function ChatPage() {
 
                 console.log('[SetupWizard] Settings saved successfully');
 
-                // Automatically select a compatible host for the chosen model
-                console.log('[SetupWizard] Auto-selecting host for model:', wizardSettings.selectedModel);
-                const host = await selectHostForModel(wizardSettings.selectedModel);
+                // Show success toast
+                toast({
+                  title: "Setup complete! 🎉",
+                  description: `Preferences saved. Next: Connect wallet and discover hosts.`,
+                });
 
-                if (host) {
-                  console.log('[SetupWizard] Host auto-selected:', host.address);
-
-                  // Save host address to settings
-                  await updateSettings({
-                    lastHostAddress: host.address,
-                  });
-
-                  toast({
-                    title: "Setup complete! 🎉",
-                    description: `Model: ${wizardSettings.selectedModel.split('.')[0]} | Host selected`,
-                  });
-                } else {
-                  console.warn('[SetupWizard] No compatible hosts found for model:', wizardSettings.selectedModel);
-                  toast({
-                    title: "Setup complete",
-                    description: "No hosts available for this model yet. Please select a different model.",
-                    variant: "destructive",
-                  });
-                }
+                // Track analytics
+                analytics.setupCompleted({
+                  model: wizardSettings.selectedModel,
+                  theme: wizardSettings.theme,
+                  paymentToken: wizardSettings.preferredPaymentToken,
+                });
 
                 // Close wizard and show chat
                 setShowSetupWizard(false);
@@ -651,8 +659,77 @@ export default function ChatPage() {
           </Card>
         )}
 
-        {/* USDC Deposit (Base Account only) */}
-        {accountInfo?.isUsingBaseAccount && accountInfo.primaryAccount && (
+        {/* Host Discovery & Selection (when authenticated but no host) */}
+        {(isAuthenticated || accountInfo) && !selectedHost && (
+          <Card className="max-w-4xl mx-auto">
+            <CardHeader>
+              <CardTitle>Discover AI Hosts</CardTitle>
+              <CardDescription>
+                Find available hosts on the Fabstir network before starting a session
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => {
+                    console.log('[Button Click] Discover Hosts button clicked');
+                    console.log('[Button Click] effectiveHostManager available:', !!effectiveHostManager);
+                    console.log('[Button Click] baseAccountSdk available:', !!baseAccountSdk);
+                    console.log('[Button Click] hostManager (regular) available:', !!hostManager);
+                    discoverHosts();
+                  }}
+                  disabled={isDiscoveringHosts}
+                  size="lg"
+                  className="gap-2"
+                >
+                  {isDiscoveringHosts ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Discovering hosts...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-5 w-5" />
+                      Discover Hosts
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {availableHosts.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-sm text-center text-muted-foreground">
+                    Found {availableHosts.length} host(s). Select one to continue:
+                  </p>
+                  <HostSelector
+                    hosts={availableHosts}
+                    selectedHost={selectedHost}
+                    onSelect={async (host) => {
+                      try {
+                        setSelectedHost(host);
+                        await updateSettings({ lastHostAddress: host.address });
+                        toast({
+                          title: "Host selected",
+                          description: `Connected to ${host.address.slice(0, 8)}...`,
+                        });
+                      } catch (error: any) {
+                        console.error('[Host Discovery] Save failed:', error);
+                        toast({
+                          title: "Host selected",
+                          description: "Preference not saved but host is active",
+                        });
+                      }
+                    }}
+                    isLoading={isDiscoveringHosts}
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* USDC Deposit (Base Account only, after host selected) */}
+        {accountInfo?.isUsingBaseAccount && accountInfo.primaryAccount && selectedHost && (
           <div className="max-w-4xl mx-auto">
             <USDCDeposit
               primaryAccount={accountInfo.primaryAccount}
