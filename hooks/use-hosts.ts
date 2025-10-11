@@ -63,6 +63,12 @@ export function useHosts(hostManager: HostManager | null) {
         hosts = await hostManager.discoverAllActiveHostsWithModels();
         console.log('[Query Function] SDK returned:', hosts?.length || 0, 'hosts');
         console.log('[Query Function] Raw hosts data:', hosts);
+
+        // Enhanced debug logging as requested by SDK developer
+        console.log('[DEBUG] SDK returned:', hosts.length, 'hosts');
+        console.log('[DEBUG] Raw hosts:', JSON.stringify(hosts, (k, v) =>
+          typeof v === 'bigint' ? v.toString() : v, 2
+        ));
       } catch (sdkError) {
         console.error('[Query Function] SDK discovery failed:', sdkError);
         throw sdkError;
@@ -138,7 +144,7 @@ export function useHosts(hostManager: HostManager | null) {
         error: result.error
       });
 
-      if (result.data && result.data.length > 0 && !selectedHost) {
+      if (result.data && result.data.length > 0) {
         const randomIndex = Math.floor(Math.random() * result.data.length);
         setSelectedHost(result.data[randomIndex]);
         console.log(`🎲 Randomly selected host ${randomIndex + 1} of ${result.data.length}: ${result.data[randomIndex].address}`);

@@ -251,9 +251,10 @@ export default function ChatPage() {
         console.log('[Auto-Discovery] Triggering host discovery after wallet connection');
         discoverHosts();
       } else {
-        // Hosts already exist but none selected - select first available host
-        console.log('[Auto-Recovery] Hosts exist but none selected - selecting first available host');
-        setSelectedHost(availableHosts[0]);
+        // Hosts already exist but none selected - randomly select for decentralization
+        const randomIndex = Math.floor(Math.random() * availableHosts.length);
+        console.log(`[Auto-Recovery] Randomly selecting host ${randomIndex + 1} of ${availableHosts.length} for decentralization`);
+        setSelectedHost(availableHosts[randomIndex]);
       }
     }
   }, [accountInfo, isAuthenticated, selectedHost, isDiscoveringHosts, effectiveHostManager, availableHosts, discoverHosts, setSelectedHost]);
