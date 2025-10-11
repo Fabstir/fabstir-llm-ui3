@@ -17,8 +17,9 @@ interface AdvancedSettingsPanelProps {
   totalTokens?: number;
   totalCost?: string;
 
-  // Host information
-  hostAddress?: string;
+  // Host information (only shown if explicitly saved to S5)
+  savedHostAddress?: string; // From settings.lastHostAddress (S5 storage)
+  hostAddress?: string; // Current selected host (may be temporary)
   hostEndpoint?: string;
   hostStake?: bigint;
   onChangeHost?: () => void;
@@ -51,6 +52,7 @@ export function AdvancedSettingsPanel({
   sessionId,
   totalTokens = 0,
   totalCost = '0.00',
+  savedHostAddress,
   hostAddress,
   hostEndpoint,
   hostStake,
@@ -137,42 +139,51 @@ export function AdvancedSettingsPanel({
               </div>
             )}
 
-            {/* Host Information */}
-            {hostAddress && (
+            {/* Host Information - Only shown if explicitly saved to S5 */}
+            {onChangeHost && (
               <>
                 <Separator />
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-sm font-semibold">
                       <Server className="h-4 w-4" />
-                      Host Information
+                      Host Selection
                     </div>
-                    {onChangeHost && (
-                      <Button variant="outline" size="sm" onClick={onChangeHost}>
-                        Change Host
-                      </Button>
-                    )}
+                    <Button variant="outline" size="sm" onClick={onChangeHost}>
+                      Change Host
+                    </Button>
                   </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="space-y-1">
-                      <div className="text-muted-foreground">Address</div>
-                      <div className="font-mono text-xs break-all">{hostAddress}</div>
-                    </div>
-                    {hostEndpoint && (
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground">Endpoint</div>
-                        <div className="font-mono text-xs break-all">{hostEndpoint}</div>
+                  {savedHostAddress && hostAddress ? (
+                    // Show full host details only if saved to S5
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="secondary" className="text-xs">Saved to S5</Badge>
                       </div>
-                    )}
-                    {hostStake && (
                       <div className="space-y-1">
-                        <div className="text-muted-foreground">Stake</div>
-                        <div className="font-semibold">
-                          {(Number(hostStake) / 1e18).toLocaleString()} FAB
+                        <div className="text-muted-foreground">Address</div>
+                        <div className="font-mono text-xs break-all">{hostAddress}</div>
+                      </div>
+                      {hostEndpoint && (
+                        <div className="space-y-1">
+                          <div className="text-muted-foreground">Endpoint</div>
+                          <div className="font-mono text-xs break-all">{hostEndpoint}</div>
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                      {hostStake && (
+                        <div className="space-y-1">
+                          <div className="text-muted-foreground">Stake</div>
+                          <div className="font-semibold">
+                            {(Number(hostStake) / 1e18).toLocaleString()} FAB
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    // No saved host - show message
+                    <div className="text-xs text-muted-foreground">
+                      No host saved. Click "Change Host" to select and save a host permanently.
+                    </div>
+                  )}
                 </div>
               </>
             )}

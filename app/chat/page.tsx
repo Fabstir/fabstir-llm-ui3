@@ -173,48 +173,10 @@ export default function ChatPage() {
         console.log('[Settings] Restoring model preference:', settings.selectedModel);
       }
 
-      // Debug: Check host restoration conditions
-      console.log('[Settings] Host restoration check:', {
-        hasLastHostAddress: !!settings.lastHostAddress,
-        lastHostAddress: settings.lastHostAddress,
-        selectedHost: selectedHost?.address,
-        hasEffectiveHostManager: !!effectiveHostManager
-      });
+      // Note: We do NOT automatically restore saved hosts from S5
+      // This ensures random selection for decentralization on each session
+      // Users can manually select and save hosts via "Change Host" button
 
-      // Restore saved host address (with automatic discovery)
-      if (settings.lastHostAddress && !selectedHost && effectiveHostManager) {
-        console.log('[Settings] Restoring saved host:', settings.lastHostAddress);
-
-        // First, discover hosts if not already discovered
-        if (availableHosts.length === 0 && !isDiscoveringHosts) {
-          console.log('[Settings] Discovering hosts to restore saved host...');
-          discoverHosts().then(() => {
-            // After discovery completes, try to restore saved host
-            restoreHostByAddress(settings.lastHostAddress!).then((host) => {
-              if (host) {
-                console.log('[Settings] Host restored after discovery:', host.address);
-              } else {
-                console.warn('[Settings] Saved host not found on network, user must select manually');
-              }
-            }).catch((error) => {
-              console.error('[Settings] Failed to restore host:', error);
-            });
-          }).catch((error) => {
-            console.error('[Settings] Host discovery failed:', error);
-          });
-        } else if (availableHosts.length > 0) {
-          // Hosts already discovered, restore immediately
-          restoreHostByAddress(settings.lastHostAddress).then((host) => {
-            if (host) {
-              console.log('[Settings] Host restored:', host.address);
-            } else {
-              console.warn('[Settings] Saved host not found on network, user must select manually');
-            }
-          }).catch((error) => {
-            console.error('[Settings] Failed to restore host:', error);
-          });
-        }
-      }
       if (settings.theme) {
         console.log('[Settings] Restoring theme:', settings.theme);
         applyTheme(settings.theme);
@@ -853,6 +815,7 @@ export default function ChatPage() {
                   sessionId={sessionId}
                   totalTokens={totalTokens}
                   totalCost={totalCost.toFixed(6)}
+                  savedHostAddress={settings?.lastHostAddress}
                   hostAddress={selectedHost?.address}
                   hostEndpoint={selectedHost?.endpoint}
                   hostStake={selectedHost?.stake}
