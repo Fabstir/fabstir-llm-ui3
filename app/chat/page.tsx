@@ -244,13 +244,19 @@ export default function ChatPage() {
       (accountInfo || isAuthenticated) &&  // Wallet connected
       !selectedHost &&                     // No host selected yet
       !isDiscoveringHosts &&              // Not already discovering
-      effectiveHostManager &&              // HostManager ready
-      availableHosts.length === 0         // Haven't discovered yet
+      effectiveHostManager                 // HostManager ready
     ) {
-      console.log('[Auto-Discovery] Triggering host discovery after wallet connection');
-      discoverHosts();
+      if (availableHosts.length === 0) {
+        // No hosts discovered yet - trigger discovery
+        console.log('[Auto-Discovery] Triggering host discovery after wallet connection');
+        discoverHosts();
+      } else {
+        // Hosts already exist but none selected - select first available host
+        console.log('[Auto-Recovery] Hosts exist but none selected - selecting first available host');
+        setSelectedHost(availableHosts[0]);
+      }
     }
-  }, [accountInfo, isAuthenticated, selectedHost, isDiscoveringHosts, effectiveHostManager, availableHosts, discoverHosts]);
+  }, [accountInfo, isAuthenticated, selectedHost, isDiscoveringHosts, effectiveHostManager, availableHosts, discoverHosts, setSelectedHost]);
 
   const [usdcAddress, setUsdcAddress] = useState<string>("");
 
@@ -421,6 +427,37 @@ export default function ChatPage() {
       toast({
         title: "Failed to save payment preference",
         description: "Preference not saved, please try again",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handler for clearing saved host preference
+  const handleClearSavedHost = async () => {
+    try {
+      console.log('[Clear Host] Removing saved host preference');
+
+      // Remove lastHostAddress from S5 settings
+      await updateSettings({ lastHostAddress: undefined });
+
+      // Clear preserved host address cache
+      setPreservedHostAddress(undefined);
+
+      // Show success toast
+      toast({
+        title: "Host preference cleared",
+        description: "Using random selection for decentralization.",
+      });
+
+      // Close modal
+      setShowHostSelector(false);
+
+      console.log('[Clear Host] Host preference cleared successfully');
+    } catch (error: any) {
+      console.error('[Clear Host] Failed to clear preference:', error);
+      toast({
+        title: "Failed to clear host preference",
+        description: "Please try again",
         variant: "destructive",
       });
     }
@@ -699,14 +736,27 @@ export default function ChatPage() {
         {(isAuthenticated || accountInfo) && !selectedHost && (
           <Card className="max-w-4xl mx-auto">
             <CardContent className="p-6">
-              <div className="flex items-center justify-center gap-3">
-                {isDiscoveringHosts ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                    <span className="text-sm text-muted-foreground">Finding available AI hosts...</span>
-                  </>
-                ) : (
-                  <span className="text-sm text-muted-foreground">Preparing to discover hosts...</span>
+              <div className="flex flex-col items-center justify-center gap-3">
+                <div className="flex items-center gap-3">
+                  {isDiscoveringHosts ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      <span className="text-sm text-muted-foreground">Finding available AI hosts...</span>
+                    </>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">Preparing to discover hosts...</span>
+                  )}
+                </div>
+                {/* Manual discover button for recovery */}
+                {!isDiscoveringHosts && (
+                  <Button
+                    onClick={discoverHosts}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Discover Hosts
+                  </Button>
                 )}
               </div>
             </CardContent>
@@ -772,8 +822,8 @@ export default function ChatPage() {
                   />
                 )}
 
-                {/* Cost Dashboard - Analytics (only when session active) */}
-                {isSessionActive && (
+                {/* Cost Dashboard - Analytics (shown when there's session data) */}
+                {messages.length > 0 && (
                   <CostDashboard
                     usdcBalance={usdcBalance}
                     ethBalance={ethBalance}
@@ -928,8 +978,22 @@ export default function ChatPage() {
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Discover Hosts Button */}
-            <div className="flex justify-end">
+            {/* Action Buttons: Discover Hosts & Clear Saved Host */}
+            <div className="flex justify-between items-center">
+              {/* Clear Saved Host Button (only shown when host is saved) */}
+              {(settings?.lastHostAddress || preservedHostAddress) ? (
+                <Button
+                  onClick={handleClearSavedHost}
+                  variant="outline"
+                  size="sm"
+                >
+                  Clear Saved Host
+                </Button>
+              ) : (
+                <div></div>
+              )}
+
+              {/* Discover Hosts Button */}
               <Button
                 onClick={discoverHosts}
                 disabled={isDiscoveringHosts}
