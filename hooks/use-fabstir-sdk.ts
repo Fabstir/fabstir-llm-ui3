@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAccount, useWalletClient } from "wagmi";
 import { IS_MOCK_MODE, MOCK_WALLET_ADDRESS, RPC_URLS } from "@/lib/constants";
@@ -66,17 +66,23 @@ export function useFabstirSDK() {
   const [userAddress, setUserAddress] = useState<string>("");
   const [isInitializing, setIsInitializing] = useState(true);
 
+  // Prevent duplicate authentication attempts
+  const authInProgress = useRef(false);
+
   // Initialize SDK on mount
   useEffect(() => {
     initializeSDK();
   }, []);
 
-  // Re-authenticate when wallet connects
-  useEffect(() => {
-    if (isConnected && address && walletClient && !isAuthenticated) {
-      authenticateWithWallet();
-    }
-  }, [isConnected, address, walletClient, isAuthenticated]);
+  // DON'T auto-authenticate when wallet connects
+  // Let the user explicitly click "Connect" in Base Account section
+  // This prevents unnecessary popups before Base Account setup
+  //
+  // useEffect(() => {
+  //   if (isConnected && address && walletClient && !isAuthenticated && !authInProgress.current) {
+  //     authenticateWithWallet();
+  //   }
+  // }, [isConnected, address, walletClient, isAuthenticated]);
 
   const initializeSDK = useCallback(async () => {
     try {
@@ -154,6 +160,12 @@ export function useFabstirSDK() {
   }, [toast]);
 
   const authenticateWithWallet = useCallback(async () => {
+    // Prevent duplicate authentication attempts
+    if (authInProgress.current) {
+      console.log("[Auth] Authentication already in progress, skipping...");
+      return;
+    }
+
     // Mock mode: Fake authentication - no wallet needed
     if (IS_MOCK_MODE) {
       setIsAuthenticated(true);
@@ -175,6 +187,7 @@ export function useFabstirSDK() {
     }
 
     try {
+      authInProgress.current = true;
       console.log("Authenticating with wallet:", address);
 
       // Lazy load SDK when actually needed
@@ -242,6 +255,8 @@ export function useFabstirSDK() {
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      authInProgress.current = false;
     }
   }, [address, walletClient, toast]);
 
