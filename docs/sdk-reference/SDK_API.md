@@ -3381,4 +3381,4 @@ Based on treasury configuration (.env.test):
 
 ## License
 
-MIT License - See LICENSE file for details.
+Business Source License 1.1 (BUSL-1.1) - See LICENSE file for details.
