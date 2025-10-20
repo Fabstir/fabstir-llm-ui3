@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Fabstir
+// SPDX-License-Identifier: BUSL-1.1
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";

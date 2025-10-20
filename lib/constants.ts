@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Fabstir
+// SPDX-License-Identifier: BUSL-1.1
+
 // Chain configuration
 export const CHAIN_ID = {
   BASE_SEPOLIA: 84532,
