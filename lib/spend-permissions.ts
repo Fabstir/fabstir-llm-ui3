@@ -136,7 +136,7 @@ export function calculateDefaultAllowance(depositAmount: string): bigint {
   // - PRIMARY account acts as the bank and holds the actual funds
   // - User only needs to approve spend permission once
   // - Avoids "insufficient spend permission" errors after a few sessions
-  const sessionMultiplier = 50n;
+  const sessionMultiplier = BigInt(50);
 
   return singleSessionAmount * sessionMultiplier;
 }

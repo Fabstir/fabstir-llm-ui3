@@ -132,10 +132,15 @@ export function useBaseAccount() {
         // Verify signer is registered (non-throwing check)
         try {
           const authManager = sdk.getAuthManager();
-          const registeredSigner = authManager.getSigner(subAccountAddress);
+          const registeredSigner = authManager.getSigner();
 
           if (registeredSigner) {
             console.log('[Base Account] ✅ Signer verified and ready');
+            // Verify it's the sub-account signer
+            const signerAddress = await registeredSigner.getAddress();
+            if (signerAddress.toLowerCase() === subAccountAddress.toLowerCase()) {
+              console.log('[Base Account] ✅ Sub-account signer verified');
+            }
           }
         } catch (err) {
           // Signer not yet registered, but that's okay - retry logic will handle it

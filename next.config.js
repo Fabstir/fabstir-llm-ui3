@@ -7,7 +7,8 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
   swcMinify: true,
-  disable: process.env.NODE_ENV === "development",
+  // Temporarily disable PWA to fix Html import error
+  disable: true, // process.env.NODE_ENV === "development",
   workboxOptions: {
     disableDevLogs: true,
   },

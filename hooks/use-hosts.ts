@@ -164,7 +164,7 @@ export function useHosts(hostManager: HostManager | null) {
     console.log(`[Smart Host Selection] Finding host for model preference: ${modelId}`);
 
     // Discover hosts if not already discovered
-    const hosts = availableHosts?.length > 0 ? availableHosts : (await refetchHosts()).data || [];
+    const hosts = (availableHosts && availableHosts.length > 0) ? availableHosts : (await refetchHosts()).data || [];
 
     if (hosts.length === 0) {
       console.error("[Smart Host Selection] No hosts discovered");

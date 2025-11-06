@@ -543,11 +543,11 @@ export default function ChatPage() {
                 });
 
                 // Track analytics
-                analytics.setupCompleted({
-                  model: wizardSettings.selectedModel,
-                  theme: wizardSettings.theme,
-                  paymentToken: wizardSettings.preferredPaymentToken,
-                });
+                analytics.setupCompleted(
+                  wizardSettings.selectedModel,
+                  wizardSettings.theme,
+                  wizardSettings.preferredPaymentToken
+                );
 
                 // Close wizard and show chat
                 setShowSetupWizard(false);

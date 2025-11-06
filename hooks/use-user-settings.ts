@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { StorageManager } from '@fabstir/sdk-core';
-import type { UserSettings, PartialUserSettings, UserSettingsVersion } from '@fabstir/sdk-core';
+import type { UserSettings, PartialUserSettings, UserSettingsVersion } from '@/types/settings';
 
 interface UseUserSettingsReturn {
   settings: UserSettings | null;
