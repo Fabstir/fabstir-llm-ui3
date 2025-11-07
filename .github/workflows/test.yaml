@@ -29,11 +29,11 @@ jobs:
         run: |
           sudo apt update -y && sudo apt install curl unzip              
           curl -L "${{secrets.SDK_CORE_URL}}" --output fabstir-sdk-core-1.3.36.tgz
-          cp ./fabstir-sdk-core-1.3.36.tgz ./node_modules/@fabstir/sdk-core/
+          unzip fabstir-sdk-core-1.3.36.tgz
 
       - name: Set env
         run: | 
-          echo "${{secrets.ENV_FILE}}" > packages/site/.env.local
+          echo "${{secrets.ENV_FILE}}" > .env.local
     
       - name: Build
         run: docker build .
