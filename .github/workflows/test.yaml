@@ -29,7 +29,6 @@ jobs:
         run: |
           sudo apt update -y && sudo apt install curl              
           curl -L "${{secrets.SDK_CORE_URL}}" --output fabstir-sdk-core-1.3.36.tgz
-          tar -xvzf fabstir-sdk-core-1.3.36.tgz
 
       - name: Set env
         run: | 
