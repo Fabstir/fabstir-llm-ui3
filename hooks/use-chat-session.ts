@@ -27,6 +27,43 @@ const PROOF_INTERVAL = 100;
 const SESSION_DURATION = 86400;
 
 /**
+ * Convert host endpoint to WebSocket URL with proxy support
+ *
+ * PRODUCTION (HTTPS): Routes through secure WSS proxy to avoid Mixed Content errors
+ *   - Input:  ws://81.150.166.91:8080/v1/ws
+ *   - Output: wss://proxy.testnet.platformlessai.ai/ws?host=81.150.166.91:8080
+ *
+ * LOCAL DEV (HTTP): Direct connection to host (unchanged)
+ *   - Input:  ws://localhost:8080/v1/ws
+ *   - Output: ws://localhost:8080/v1/ws
+ *
+ * @param hostEndpoint - Original endpoint from host (e.g., "ws://IP:8080/v1/ws")
+ * @returns Transformed WebSocket URL
+ */
+function getWebSocketUrl(hostEndpoint: string): string {
+  // Check if we're on HTTPS (production)
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    // Extract host IP:port from endpoint
+    // e.g., "ws://81.150.166.91:8080/v1/ws" → "81.150.166.91:8080"
+    const cleanHost = hostEndpoint.replace(/^(ws:\/\/|wss:\/\/|http:\/\/|https:\/\/)/, '');
+    const hostWithoutPath = cleanHost.replace(/\/v1\/ws$/, '');
+    const hostWithPort = hostWithoutPath.includes(':')
+      ? hostWithoutPath
+      : `${hostWithoutPath}:8080`;
+
+    const proxyUrl = `wss://proxy.testnet.platformlessai.ai/ws?host=${hostWithPort}`;
+    console.log('[WebSocket Proxy] 🔒 Production mode - routing through secure proxy');
+    console.log(`  Original: ${hostEndpoint}`);
+    console.log(`  Proxied:  ${proxyUrl}`);
+    return proxyUrl;
+  } else {
+    // Local dev: use direct connection
+    console.log('[WebSocket Proxy] 🔧 Dev mode - using direct connection:', hostEndpoint);
+    return hostEndpoint;
+  }
+}
+
+/**
  * Verify endpoint serves the expected host address
  * Attempts to query endpoint for its host information
  *
@@ -218,7 +255,7 @@ export function useChatSession(
         model: selectedHost.models[0],
         provider: selectedHost.address,
         hostAddress: selectedHost.address,
-        endpoint: selectedHost.endpoint,
+        endpoint: getWebSocketUrl(selectedHost.endpoint),  // Transform endpoint for proxy support
         paymentToken: settings?.preferredPaymentToken === 'ETH'
           ? undefined  // Omit for native ETH payments
           : chain.contracts.usdcToken,  // Include for USDC payments

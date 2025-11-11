@@ -146,10 +146,12 @@ export function USDCDeposit({ primaryAccount, subAccount, usdcAddress, onDeposit
 
       console.log("💸 Depositing to primary account:", primaryAccount);
       console.log("Amount:", depositAmount, "USDC (", amountWei.toString(), "wei)");
+      console.log("Source wallet (EOA):", eoaAddress);
 
-      // Use ethers.js for the transaction (more reliable than viem for this)
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
+      // Use walletClient from wagmi to ensure we use the correct wallet (EOA, not Base Account)
+      // Convert wagmi walletClient to ethers signer
+      const provider = new ethers.BrowserProvider(walletClient as any);
+      const signer = await provider.getSigner(eoaAddress);
 
       const usdcContract = new ethers.Contract(usdcAddress, USDC_ABI, signer);
 
